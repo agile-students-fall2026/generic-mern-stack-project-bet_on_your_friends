@@ -8,26 +8,22 @@
 
 ## Prototype
 
-[Here]() is the link to our clickable prototype.
+
 
 ## App Map
 
-[Here]() is the link to our clickable app map.
+
 
 ## Work Split
 
-- **Alisha (az2924):** My Groups, Group: Resolved Predictions, Prediction Detail (Bettor View, Not Enough Coins, Already Bet, Creator View), Create Prediction (and Errors), Profile, and the app map for these screens
-- **Sufyan:** 
-- **Vihaan:** 
-- **Nihal:** 
+- **Sufyan Waryah** ([sufyanw](https://github.com/sufyanw))
+- **Alisha Zaman** ([az2924](https://github.com/az2924)): Created wireframes for My Groups, Group: Resolved Predictions, Prediction Detail (Bettor View, Not Enough Coins, Already Bet, Creator View), Create Prediction (and Errors), and Profile; Created the app map for those screens; Created a template in `UX-DESIGN.md` for everyone to utilize
+- **Vihaan Agarwal** ([VihaanAgarwal](https://github.com/VihaanAgarwal))
+- **Nihal Sundari** ([NISUN05](https://github.com/NISUN05))
 
 ## App Map
 
-<a href="ux-design/app-map.png"><img src="ux-design/app-map.png" width="900"></a>
 
-## Wireframes
-
-On every signed-in screen, the pill in the header shows the user's current coin balance, and the bottom bar switches between Groups, My Bets, Leaderboard, and Profile.
 
 ---
 
