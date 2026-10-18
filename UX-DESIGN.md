@@ -35,9 +35,9 @@ On every signed-in screen, the pill in the header shows the user's current coin 
 
 #### My Groups
 
-Lists the user's groups after they log in. The welcome banner only appears on a new user's first visit, showing their 1,000 starting coins.
+Lists the user's groups after they log in.
 
-<a href="ux-design/MY-GROUPS-FILE.png"><img src="ux-design/MY-GROUPS-FILE.png" width="375"></a>
+<a href="ux-design/my-groups-returning-user.png"><img src="ux-design/my-groups-returning-user.png" width="375"></a>
 
 #### Group: Resolved Predictions
 
