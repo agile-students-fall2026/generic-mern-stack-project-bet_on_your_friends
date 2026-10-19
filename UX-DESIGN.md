@@ -87,25 +87,25 @@ Shows a confirmation modal when a user attempts to place a bet, summarizing the 
 
 <a href="ux-design/bet-confirmation-modal.png"><img src="ux-design/bet-confirmation-modal.png" width="375"></a>
 
-#### Prediction Detail: Prediction Deletion Confirmation Modal
+#### Prediction Action: Prediction Deletion Confirmation Modal
 
 Shows a warning confirmation modal when a creator attempts to permanently delete an unbet-on prediction.
 
 <a href="ux-design/prediction-deletion-confirmation-modal.png"><img src="ux-design/prediction-deletion-confirmation-modal.png" width="375"></a>
 
-#### Prediction Detail: Draft Comment 
+#### Prediction Action: Draft Comment 
 
 Provides a text draft box with character limits for adding the first comment to a prediction before posting.
 
 <a href="ux-design/draft-comment.png"><img src="ux-design/draft-comment.png" width="375"></a>
 
-#### Prediction Detail: Draft First Comment
+#### Prediction Action: Draft First Comment
 
 Provides a text draft box with character limits for adding the first comment to a prediction before posting.
 
 <a href="ux-design/draft-first-comment.png"><img src="ux-design/draft-first-comment.png" width="375"></a>
 
-#### Prediction Detail: Comments Thread
+#### Prediction Action: Comments Thread
 
 Displays posted comments from group members under a prediction, along with an inline input box to add further comments.
 
