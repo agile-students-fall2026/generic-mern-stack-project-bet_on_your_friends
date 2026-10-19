@@ -137,6 +137,8 @@ Lets the user change the display name friends see in groups and on the leaderboa
 
 ### Leaderboard
 
+#### Leaderboard
+
 Ranks group members by their available virtual coin balances from highest to lowest.
 
 <a href="ux-design/Leaderboard.png"><img src="ux-design/Leaderboard.png" width="375"></a>
