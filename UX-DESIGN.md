@@ -54,7 +54,7 @@ Shows an error when the email address is already associated with an account. The
 
 Shows date-of-birth validation when the entered date does not meet the app's minimum age of 21. Create Account remains disabled while the form is invalid.
 
-<a href="ux-design/Create-Account-Age-Error.png"><img src="ux-design/Create-Account-Age-Error.png.png" alt="Create Account: Age Requirement" width="375"></a>
+<a href="ux-design/Create-Account-Age-Error.png"><img src="ux-design/Create-Account-Age-Error.png" alt="Create Account: Age Requirement" width="375"></a>
 
 #### Create Account: Password Mismatch
 

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812" font-family="Inter, Arial, Helvetica, sans-serif">
+  <!-- Frame background -->
+  <rect x="0" y="0" width="375" height="812" fill="#FFFFFF"/>
+
+  <!-- Status bar -->
+  <text x="33" y="28" font-size="16" font-weight="600" fill="#000000">10:06</text>
+
+  <!-- App bar -->
+  <text x="16" y="76" font-size="15" fill="#1A1A1A">‹ Back</text>
+  <text x="187.5" y="76" font-size="17" font-weight="700" fill="#1A1A1A" text-anchor="middle">NYU Roommates</text>
+  <rect x="271" y="58" width="88" height="28" fill="#E5E5E5"/>
+  <text x="315" y="76" font-size="12" font-weight="600" fill="#1A1A1A" text-anchor="middle">1,190 coins</text>
+  <line x1="0" y1="96" x2="375" y2="96" stroke="#D9D9D9" stroke-width="1"/>
+
+  <!-- Creator row -->
+  <rect x="16" y="112" width="36" height="36" fill="#D9D9D9"/>
+  <text x="34" y="133" font-size="8" fill="#666666" text-anchor="middle">photo</text>
+  <text x="62" y="127" font-size="14" font-weight="600" fill="#1A1A1A">Jane Doe</text>
+  <text x="62" y="144" font-size="12" fill="#757575">Created Oct 1, 2026</text>
+
+  <!-- Prediction question -->
+  <text x="16" y="190" font-size="22" font-weight="700" fill="#1A1A1A">Will Alex get an internship</text>
+  <text x="16" y="218" font-size="22" font-weight="700" fill="#1A1A1A">offer by November 1?</text>
+
+  <!-- Deadline card -->
+  <rect x="16" y="236" width="343" height="56" fill="#F2F2F2" stroke="#CCCCCC" stroke-width="1"/>
+  <text x="32" y="259" font-size="14" font-weight="600" fill="#1A1A1A">Betting closes in 2d 13h</text>
+  <text x="32" y="279" font-size="12" fill="#757575">Closes Oct 20, 2026 at 11:59 PM</text>
+
+  <!-- Outcomes header -->
+  <text x="16" y="324" font-size="15" font-weight="700" fill="#1A1A1A">Outcomes</text>
+  <text x="359" y="324" font-size="12" fill="#757575" text-anchor="end">Pool: 460 coins</text>
+
+  <!-- Outcome 1 (user's pick) -->
+  <rect x="16" y="340" width="343" height="72" fill="#FFFFFF" stroke="#333333" stroke-width="2"/>
+  <text x="32" y="371" font-size="16" font-weight="700" fill="#1A1A1A">Yes</text>
+  <rect x="68" y="356" width="64" height="20" fill="#E5E5E5"/>
+  <text x="100" y="370" font-size="11" font-weight="700" fill="#1A1A1A" text-anchor="middle">Your pick</text>
+  <text x="343" y="364" font-size="14" font-weight="600" fill="#1A1A1A" text-anchor="end">340 coins</text>
+  <text x="343" y="382" font-size="12" fill="#757575" text-anchor="end">4 bets</text>
+  <rect x="32" y="394" width="311" height="8" fill="#E5E5E5"/>
+  <rect x="32" y="394" width="230" height="8" fill="#8C8C8C"/>
+
+  <!-- Outcome 2 -->
+  <rect x="16" y="424" width="343" height="72" fill="#FFFFFF" stroke="#BBBBBB" stroke-width="1"/>
+  <text x="32" y="455" font-size="16" font-weight="700" fill="#1A1A1A">No</text>
+  <text x="343" y="448" font-size="14" font-weight="600" fill="#1A1A1A" text-anchor="end">120 coins</text>
+  <text x="343" y="466" font-size="12" fill="#757575" text-anchor="end">2 bets</text>
+  <rect x="32" y="478" width="311" height="8" fill="#E5E5E5"/>
+  <rect x="32" y="478" width="81" height="8" fill="#8C8C8C"/>
+
+  <!-- Existing bet card -->
+  <rect x="16" y="520" width="343" height="112" fill="#F2F2F2" stroke="#CCCCCC" stroke-width="1"/>
+  <text x="32" y="546" font-size="12" fill="#757575">Your bet</text>
+  <text x="32" y="572" font-size="18" font-weight="700" fill="#1A1A1A">50 coins on Yes</text>
+  <text x="32" y="594" font-size="12" fill="#757575">Placed today at 10:06 AM</text>
+  <text x="32" y="617" font-size="12" fill="#1A1A1A">You can only bet once on each prediction.</text>
+
+  <!-- Bottom navigation -->
+  <line x1="0" y1="728" x2="375" y2="728" stroke="#D9D9D9" stroke-width="1"/>
+  <rect x="35" y="744" width="24" height="24" fill="#4D4D4D"/>
+  <text x="47" y="786" font-size="11" font-weight="700" fill="#1A1A1A" text-anchor="middle">Groups</text>
+  <rect x="129" y="744" width="24" height="24" fill="#D9D9D9"/>
+  <text x="141" y="786" font-size="11" fill="#757575" text-anchor="middle">My Bets</text>
+  <rect x="222" y="744" width="24" height="24" fill="#D9D9D9"/>
+  <text x="234" y="786" font-size="11" fill="#757575" text-anchor="middle">Leaderboard</text>
+  <rect x="316" y="744" width="24" height="24" fill="#D9D9D9"/>
+  <text x="328" y="786" font-size="11" fill="#757575" text-anchor="middle">Profile</text>
+</svg>
