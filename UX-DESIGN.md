@@ -178,7 +178,7 @@ Form for posting a new prediction with a question, at least two outcomes, and a 
 
 #### Create Prediction: Errors
 
-Shown when Post Prediction is tapped without a question or at least two outcomes.
+Shown when Post Prediction is tapped without a question, at least two outcomes, or a betting deadline.
 
 <a href="ux-design/Cannot-Bet-After-Prediction-Deadline.png"><img src="ux-design/Cannot-Bet-After-Prediction-Deadline.png" width="375"></a>
 
