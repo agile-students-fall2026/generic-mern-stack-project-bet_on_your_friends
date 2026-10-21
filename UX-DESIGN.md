@@ -117,7 +117,7 @@ Lists predictions that are still open for bets. Tapping a prediction opens its d
 
 Shows a group's finished predictions and their results. The badge shows whether the user won coins, lost coins, or didn't bet.
 
-<a href="ux-design/Resolved-Groups.png"><img src="ux-design/Resolved-Groups.png" width="375"></a>
+<a href="ux-design/resolved-groups.png"><img src="ux-design/resolved-groups.png" width="375"></a>
 
 #### Group Members
 
