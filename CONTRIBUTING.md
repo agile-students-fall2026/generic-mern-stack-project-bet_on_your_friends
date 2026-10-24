@@ -25,8 +25,8 @@ All changes must be made on separate branches and submitted through Pull Request
 4. Push the feature branch to our GitHub repository
 5. Open a Pull Request targeting our repository's `master` branch
 6. Request a review from at least one other team member
-7. Address any feedback before merging
-8. Once approved, the author of the Pull Request is responsible for merging it, unless you're a third-party contributor. Then, a team member will merge the pull request for you
+7. Address any feedback, if given any
+8. Once approved, the **reviewer** of the Pull Request is responsible for merging it. See [here](https://knowledge.kitchen/content/courses/agile-development-and-devops/notes/project-kickoff/#peer-review) for more details
 
 ### Branch Protection
 
