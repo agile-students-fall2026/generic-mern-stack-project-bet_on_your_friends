@@ -28,6 +28,29 @@ All changes must be made on separate branches and submitted through Pull Request
 7. Address any feedback, if given any
 8. Once approved, the **reviewer** of the Pull Request is responsible for merging it. See [here](https://knowledge.kitchen/content/courses/agile-development-and-devops/notes/project-kickoff/#peer-review) for more details
 
+
+### Branch Naming
+
+Pulled from [here](https://knowledge.kitchen/content/courses/agile-development-and-devops/notes/project-kickoff/#branches).
+
+Requirements:
+
+- Make all changes to the code in isolated branches
+- Create a new branch for every Task or Spike under development
+- Never work directly in the `master` trunk branch
+- Name branches after the User Story and Task/Spike which they are intended to implement, including: – the user story issue number (if any) – the task or spike issue number – a shorthand name for the branch that describes what changes it includes
+
+Examples:
+
+- A branch intended to implement Task #9, which is part of User Story #13:
+```
+git checkout -b user-story/13/task/9/implement-user-login
+```
+- A branch intended to implement Spike #27:
+```
+git checkout -b spike/27/learn-react-js
+```
+
 ### Branch Protection
 
 Our team uses a ruleset to protect the `master` branch:
