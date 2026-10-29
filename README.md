@@ -27,7 +27,25 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and developme
 
 ## Building & Testing
 
-TBD
+From the root of the repository, run:
+
+```
+cd front-end
+npm install
+npm run dev
+```
+
+This will open up localhost. On localhost, you should manually test any pages or features that were changed to make sure everything works as expected.
+
+
+You can also test changes before creating a PR:
+
+```
+npm run build
+npm run lint
+```
+
+If you made your changes correctly, running both commands should result in 0 errors (hopefully...)
 
 ## Resources
 
