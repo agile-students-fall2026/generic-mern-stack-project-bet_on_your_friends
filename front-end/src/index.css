@@ -1,5 +1,28 @@
-nav {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
+
+@import "tailwindcss";
+
+/* NYU colors are used throughout the front-end of the app, 
+   noted as a theme so it can be grouped */
+@theme {
+  --color-nyu-violet: #57068c;
+  --color-nyu-ultraviolet: #87189d;
+  --color-nyu-lavender: #f3eaf8;
+}
+
+/* global styling across the app */
+:root {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #21152b;
+  background-color: #ffffff;
+}
+
+/* removes default margin & sets minimum width  */
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+/* for react application itself  */
+#root {
+  min-height: 100vh;
 }
