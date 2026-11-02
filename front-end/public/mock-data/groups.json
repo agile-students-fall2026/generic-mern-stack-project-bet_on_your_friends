@@ -1,0 +1,35 @@
+[
+  {
+    "id": "g1",
+    "name": "NYU Roommates",
+    "description": "Who will receive what chore?",
+    "visibility": "private",
+    "whoCanInvite": "all",
+    "inviteCode": "PAU789",
+    "adminIds": [1001],
+    "memberIds": [1001, 1002, 1003, 1004, 1005, 1006],
+    "openPredictions": 3
+  },
+  {
+    "id": "g2",
+    "name": "CS Study Group",
+    "description": "Who will finish the problem set first?",
+    "visibility": "private",
+    "whoCanInvite": "admins",
+    "inviteCode": "CSG482",
+    "adminIds": [1002],
+    "memberIds": [1001, 1002, 1003, 1004],
+    "openPredictions": 1
+  },
+  {
+    "id": "g3",
+    "name": "Weekend Hikers",
+    "description": "Will we actually make it to the top?",
+    "visibility": "private",
+    "whoCanInvite": "all",
+    "inviteCode": "HIK907",
+    "adminIds": [1003],
+    "memberIds": [1003, 1005, 1006],
+    "openPredictions": 2
+  }
+]

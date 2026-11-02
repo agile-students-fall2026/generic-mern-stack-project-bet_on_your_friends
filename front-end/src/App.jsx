@@ -1,6 +1,14 @@
 
-import { Link, Routes, Route, useLocation } from 'react-router-dom'
+import { Link, Routes, Route } from 'react-router-dom'
+import AppLayout from './components/AppLayout'
+import RequireAuth from './components/RequireAuth'
 import CreateAccount from './pages/CreateAccount'
+import CreateGroup from './pages/CreateGroup'
+import InviteFriends from './pages/InviteFriends'
+import JoinGroup from './pages/JoinGroup'
+import Login from './pages/Login'
+import MyGroups from './pages/MyGroups'
+import Profile from './pages/Profile'
 
 // home page with just links to sign up or log in
 function Home() {
@@ -36,47 +44,55 @@ function Home() {
   )
 }
 
-// login page -> to be implemented
-function Login() {
+// group predictions page
+function GroupPredictions() {
   return (
-    <main className="p-6">
-      <h1>Log In</h1>
+    <AppLayout title="Group" back="/groups">
       <p>This page has not been implemented yet.</p>
-      <Link to="/">Back to Home</Link>
-    </main>
+      <Link to="invite" className="font-semibold text-nyu-violet">
+        Invite friends
+      </Link>
+    </AppLayout>
   )
 }
 
-// my groups page -> to be implemented
-function MyGroups() {
-  const location = useLocation()
-
+// my bets page
+function MyBets() {
   return (
-    <main className="p-6">
-      <h1>My Groups</h1>
-
-      {location.state?.signupCompleted && (
-        <p>Account registration completed successfully.</p>
-      )}
-      {/* for team, remove this comment once you implemented this -> carry over the 
-      same user from create account to this page, and the rest of the pages in the app. we should
-      display their coin balance here and on other pages + require account to be 
-      logged in every time the given page is open */}
+    <AppLayout title="My Bets">
       <p>This page has not been implemented yet.</p>
-      <Link to="/">Back to Home</Link>
-    </main>
+    </AppLayout>
   )
 }
 
-// app itself, routes for the homepage, sign up, login, and
-// a bare bones page not found
+// leaderboard page
+function Leaderboard() {
+  return (
+    <AppLayout title="Leaderboard">
+      <p>This page has not been implemented yet.</p>
+    </AppLayout>
+  )
+}
+
+// routes for the homepage, sign up, login, etc.
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/signup" element={<CreateAccount />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/groups" element={<MyGroups />} />
+
+      <Route element={<RequireAuth />}>
+        <Route path="/groups" element={<MyGroups />} />
+        <Route path="/groups/new" element={<CreateGroup />} />
+        <Route path="/groups/:groupId" element={<GroupPredictions />} />
+        <Route path="/groups/:groupId/invite" element={<InviteFriends />} />
+        <Route path="/join/:inviteCode" element={<JoinGroup />} />
+        <Route path="/bets" element={<MyBets />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/profile" element={<Profile />} />
+      </Route>
+
       <Route path="*" element={<Home />} />
     </Routes>
   )

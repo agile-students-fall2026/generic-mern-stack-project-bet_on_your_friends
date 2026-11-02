@@ -1,0 +1,8 @@
+[
+  { "id": 1001, "name": "Marcus Lee", "email": "marcus.lee@gmail.com", "coinBalance": 1240 },
+  { "id": 1002, "name": "James Chen", "email": "james.chen@gmail.com", "coinBalance": 980 },
+  { "id": 1003, "name": "Robert Brown", "email": "robert.brown@gmail.com", "coinBalance": 1515 },
+  { "id": 1004, "name": "Hana Kim", "email": "hana.kim@gmail.com", "coinBalance": 860 },
+  { "id": 1005, "name": "Jane Doe", "email": "jane.doe@gmail.com", "coinBalance": 1100 },
+  { "id": 1006, "name": "John Doe", "email": "john.doe@gmail.com", "coinBalance": 1320 }
+]
