@@ -9,6 +9,7 @@ import JoinGroup from './pages/JoinGroup'
 import Login from './pages/Login'
 import MyGroups from './pages/MyGroups'
 import Profile from './pages/Profile'
+import Leaderboard from './pages/Leaderboard'
 
 // home page with sign up or login
 function Home() {
@@ -66,15 +67,6 @@ function GroupPredictions() {
 function MyBets() {
   return (
     <AppLayout title="My Bets">
-      <p>This page has not been implemented yet.</p>
-    </AppLayout>
-  )
-}
-
-// leaderboard page
-function Leaderboard() {
-  return (
-    <AppLayout title="Leaderboard">
       <p>This page has not been implemented yet.</p>
     </AppLayout>
   )
