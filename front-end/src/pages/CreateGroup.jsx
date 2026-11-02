@@ -89,7 +89,7 @@ function CreateGroup() {
             }}
             onBlur={() => setNameTouched(true)}
           />
-
+           {/* TODO: show another error - group name has exceeded the 40 character limit */}
           {showNameError && (
             <span className="mt-1 block text-sm text-red-600" role="alert">
               Enter a group name.
