@@ -1,0 +1,143 @@
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import AppLayout from '../components/AppLayout'
+import Toast from '../components/Toast'
+import { useAuth } from '../context/auth'
+import { getMockGroupById } from '../services/mockGroups'
+
+function InviteFriends() {
+  const { groupId } = useParams()
+  const { user } = useAuth()
+
+  const [group, setGroup] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [toastMessage, setToastMessage] = useState('')
+
+  // load group user is inviting another user to
+  useEffect(() => {
+    let buffer = false
+
+    getMockGroupById(groupId)
+      .then((foundGroup) => {
+        if (!buffer) setGroup(foundGroup)
+      })
+      .catch((error) => {
+        if (!buffer) setLoadError(error.message)
+      })
+      .finally(() => {
+        if (!buffer) setLoading(false)
+      })
+
+    return () => {
+      buffer = true
+    }
+  }, [groupId])
+
+  // toast timeout
+  useEffect(() => {
+    if (!toastMessage) return
+
+    const timer = setTimeout(() => setToastMessage(''), 2500)
+    return () => clearTimeout(timer)
+  }, [toastMessage])
+
+  const isMember = group?.memberIds.includes(user.id)
+  const canInvite =
+    isMember &&
+    (group.whoCanInvite === 'all' || group.adminIds.includes(user.id))
+
+  // link to join group
+  const inviteLink = group
+    ? `${window.location.origin}/join/${group.inviteCode}`
+    : ''
+
+  // copy invite link
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(inviteLink)
+      setToastMessage('Link copied to clipboard.')
+    } catch {
+      setToastMessage('Unable to copy the link. Please try again.')
+    }
+  }
+
+  return (
+    <AppLayout title="My Groups" back="/groups">
+      <h2 className="text-3xl font-bold text-nyu-violet">Invite friends</h2>
+
+      {loading && <p className="mt-4 text-gray-500">Loading group...</p>}
+
+      {loadError && (
+        <p className="mt-4 text-sm text-red-600" role="alert">
+          {loadError}
+        </p>
+      )}
+
+      {!loading && !loadError && !isMember && (
+        <p className="mt-4 text-gray-500">
+          This group could not be found.
+        </p>
+      )}
+
+      {isMember && !canInvite && (
+        <>
+          <p className="mt-1 text-gray-500">{group.name}</p>
+          <p className="mt-6 rounded-xl border border-gray-200 bg-white p-5 text-gray-600">
+            Only admins can invite friends to this group.
+          </p>
+        </>
+      )}
+
+      {canInvite && (
+        <>
+          <p className="mt-1 text-gray-500">{group.name}</p>
+
+          <p className="mt-6 text-gray-700">
+            Copy the link and send it to friends you want to invite.
+          </p>
+
+          <label className="mt-6 block font-medium" htmlFor="invite-link">
+            Invite link
+          </label>
+
+          <div className="mt-2 flex gap-3">
+            <input
+              id="invite-link"
+              type="text"
+              readOnly
+              value={inviteLink}
+              onFocus={(e) => e.target.select()}
+              className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white p-3 text-gray-700 outline-none focus:border-nyu-violet"
+            />
+
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="rounded-lg bg-nyu-violet px-5 font-semibold text-white hover:bg-nyu-ultraviolet"
+            >
+              Copy
+            </button>
+          </div>
+
+          <p className="mt-2 text-sm text-gray-500">
+            Anyone with this link can join.
+          </p>
+        </>
+      )}
+
+      {isMember && (
+        <Link
+          to={`/groups/${group.id}`}
+          className="mt-10 block rounded-lg border border-nyu-violet p-3 text-center font-semibold text-nyu-violet hover:bg-nyu-lavender"
+        >
+          Go to group
+        </Link>
+      )}
+
+      <Toast message={toastMessage} />
+    </AppLayout>
+  )
+}
+
+export default InviteFriends

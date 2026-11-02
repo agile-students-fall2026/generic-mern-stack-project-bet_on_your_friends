@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/auth'
 import { isEmailRegistered, registerMockAccount } from '../services/mockSignUp'
 
 // form input stlying -> rounded boxes
@@ -47,6 +48,7 @@ function isOldEnough(dateOfBirth) {
 
 function CreateAccount() {
   const navigate = useNavigate()
+  const { logIn } = useAuth()
 
   // state variables for each form field
   const [name, setName] = useState('')
@@ -103,6 +105,9 @@ async function handleSubmit(event) {
   try {
     // register the account and get the new user
     const user = await registerMockAccount({ name, email })
+
+    // log the new user for every page to access
+    logIn(user)
 
     // redirect to My Groups after successful registration
     navigate('/groups', {
