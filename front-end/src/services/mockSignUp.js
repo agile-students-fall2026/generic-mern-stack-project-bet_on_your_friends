@@ -4,15 +4,9 @@
 
 // keep track of registered accounts
 // looked up by their email
-const registeredMockAccounts = new Map()
-
-// ID for the next user (e.g. first user to ever sign up is id 1, next is 2, etc.)
-let nextUserId = 1
-let currentMockAccount
-
-export function getCurrentMockAccount() {
-  return currentMockAccount
-}
+const storageKey = 'betOnYourFriendsAccounts'
+const savedAccounts = JSON.parse(sessionStorage.getItem(storageKey) || '[]')
+const registeredMockAccounts = new Map(savedAccounts.map((user) => [user.email.toLowerCase(), user]))
 
 // check whether an email is already registered
 export function isEmailRegistered(email) {
@@ -24,9 +18,14 @@ export function getRegisteredMockAccount(email) {
   return registeredMockAccounts.get(email.trim().toLowerCase()) ?? null
 }
 
+export function getMockAccounts() {
+  return [...registeredMockAccounts.values()]
+}
+
 // save an account for rest of session
 export function saveMockAccount(user) {
-  registeredMockAccounts.set(user.email, user)
+  registeredMockAccounts.set(user.email.trim().toLowerCase(), user)
+  sessionStorage.setItem(storageKey, JSON.stringify([...registeredMockAccounts.values()]))
 }
 
 // simulate creating an account
@@ -40,7 +39,7 @@ export async function registerMockAccount({ name, email }) {
 
   // mock user
   const user = {
-    id: nextUserId++,
+    id: crypto.randomUUID(),
     name: name.trim(),
     email: normalizedEmail,
     coinBalance: 1000 // give users 1000 coins upon signing up, good baseline until 
@@ -50,6 +49,5 @@ export async function registerMockAccount({ name, email }) {
   // save account
   saveMockAccount(user)
 
-  currentMockAccount = user
   return user
 }

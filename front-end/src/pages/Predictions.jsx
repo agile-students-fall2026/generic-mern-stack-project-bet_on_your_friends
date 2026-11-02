@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import AppLayout from '../components/AppLayout'
+import { getDisplayName, useAuth } from '../context/auth'
 import PredictionCard from '../components/PredictionCard'
 import ConfirmModal from '../components/ConfirmModal'
 import PredictionForm from '../components/PredictionForm'
@@ -16,6 +18,8 @@ const buttonStyle = 'rounded-lg bg-nyu-violet p-3 font-semibold text-white disab
 const inputStyle = 'mt-2 w-full rounded-lg border border-gray-300 p-3'
 
 function Predictions() {
+  const { groupId } = useParams()
+  const { user: account, logIn } = useAuth()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -28,15 +32,18 @@ function Predictions() {
   const [winningOutcome, setWinningOutcome] = useState('')
 
   async function loadData() {
-    const result = await getMockPredictionData()
+    const result = await getMockPredictionData(groupId, account)
     setData({ ...result })
+    logIn({ ...result.users.find((person) => person.id === account.id) })
   }
 
   useEffect(() => {
-    getMockPredictionData()
-      .then((result) => setData({ ...result }))
-      .catch((problem) => setError(problem.message))
-  }, [])
+    let buffer = false
+    getMockPredictionData(groupId, account)
+      .then((result) => { if (!buffer) setData({ ...result }) })
+      .catch((problem) => { if (!buffer) setError(problem.message) })
+    return () => { buffer = true }
+  }, [groupId, account])
 
   function openPrediction(id) {
     loadData().catch((problem) => setError(problem.message))
@@ -52,10 +59,10 @@ function Predictions() {
     setError('')
     try {
       if (editing) {
-        await editMockPrediction(editing.id, values)
+        await editMockPrediction(data, editing.id, values)
         setSelectedId(editing.id)
       } else {
-        const prediction = await createMockPrediction(values)
+        const prediction = await createMockPrediction(data, values)
         setSelectedId(prediction.id)
       }
       await loadData()
@@ -67,17 +74,17 @@ function Predictions() {
     }
   }
 
-  async function placeBet(event) {
+  function requestBet(event) {
     event.preventDefault()
     setError('')
-    try {
-      await placeMockBet(selectedId, betOutcome, betAmount)
-      await loadData()
-      setDialog({ type: 'bet', title: 'Bet placed', message: `Your bet of ${betAmount} coins on ${betOutcome} was recorded.` })
-      setBetAmount('')
-    } catch (problem) {
-      setError(problem.message)
-    }
+    setDialog({
+      type: 'placeBet',
+      title: 'Confirm my bet?',
+      message: `Bet ${betAmount} coins on ${betOutcome}? This cannot be undone.`,
+      predictionId: selectedId,
+      outcome: betOutcome,
+      amount: betAmount,
+    })
   }
 
   async function confirmAction() {
@@ -85,13 +92,20 @@ function Predictions() {
     setDialog(null)
     setError('')
     try {
+      if (action === 'placeBet') {
+        await placeMockBet(data, dialog.predictionId, dialog.outcome, dialog.amount)
+        await loadData()
+        setBetAmount('')
+        setDialog({ type: 'bet', title: 'Bet placed', message: `Your bet of ${dialog.amount} coins on ${dialog.outcome} was recorded.` })
+        return
+      }
       if (action === 'delete') {
-        await deleteMockPrediction(selectedId)
+        await deleteMockPrediction(data, selectedId)
         setSelectedId(null)
         setMessage('Prediction deleted.')
       }
       if (action === 'resolve') {
-        await resolveMockPrediction(selectedId, winningOutcome)
+        await resolveMockPrediction(data, selectedId, winningOutcome)
         setMessage('Final outcome saved and coin balances updated.')
       }
       if (action !== 'bet') await loadData()
@@ -102,18 +116,21 @@ function Predictions() {
 
   if (!data) {
     return (
-      <main className="p-6">
+      <AppLayout title="Predictions" back="/groups">
         <p role="status">{error || 'Loading predictions...'}</p>
-        {error && <Link to="/signup">Create account</Link>}
-      </main>
+      </AppLayout>
     )
   }
 
   const user = data.users.find((person) => person.id === data.currentUserId)
   const selected = data.predictions.find((prediction) => prediction.id === selectedId)
+  const creator = selected && data.users.find((person) => person.id === selected.creatorId)
   const isCreator = selected && selected.creatorId === user.id
   const userBet = selected && selected.bets.find((bet) => bet.userId === user.id)
   const bettingClosed = selected && selected.bettingClosed
+  let confirmText = 'Confirm'
+  if (dialog?.type === 'bet') confirmText = 'Done'
+  if (dialog?.type === 'placeBet') confirmText = 'Place bet'
 
   function outcomeTotal(outcome) {
     let total = 0
@@ -124,11 +141,8 @@ function Predictions() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f8f5fb] px-4 py-8">
-      <div className="mx-auto max-w-md">
-        <Link to="/groups" className="text-nyu-violet">Back to Groups</Link>
-        <h1 className="mt-4 text-2xl font-bold text-nyu-violet">{data.groupName}</h1>
-        <p className="mt-2 font-semibold">{user.coinBalance} coins</p>
+    <AppLayout title={data.group.name} back="/groups">
+        <Link to="invite" className="font-semibold text-nyu-violet">Invite friends</Link>
         {error && <p role="alert" className="mt-4 text-red-600">{error}</p>}
         {message && <p role="status" className="mt-4 text-nyu-violet">{message}</p>}
 
@@ -143,7 +157,7 @@ function Predictions() {
           <section className="mt-6 space-y-5">
             <button onClick={() => { setSelectedId(null); setError(''); setMessage('') }} className="text-nyu-violet">Back to predictions</button>
             <h2 className="text-xl font-bold">{selected.question}</h2>
-            <p>By {data.users.find((person) => person.id === selected.creatorId).name}</p>
+            <p>By {getDisplayName(creator)}</p>
             <p>Closes {new Date(selected.deadline).toLocaleString()}</p>
             <ul className="space-y-3">
               {selected.outcomes.map((outcome) => (
@@ -182,7 +196,7 @@ function Predictions() {
             ) : bettingClosed ? (
               <p>Betting is closed.</p>
             ) : (
-              <form onSubmit={placeBet} className="space-y-4">
+              <form onSubmit={requestBet} className="space-y-4">
                 <fieldset className="space-y-2">
                   <legend className="font-medium">Choose an outcome</legend>
                   {selected.outcomes.map((outcome) => (
@@ -219,13 +233,12 @@ function Predictions() {
           <ConfirmModal
             title={dialog.title}
             message={dialog.message}
-            confirmText={dialog.type === 'bet' ? 'Done' : 'Confirm'}
+            confirmText={confirmText}
             onConfirm={confirmAction}
             onCancel={dialog.type === 'bet' ? undefined : () => setDialog(null)}
           />
         )}
-      </div>
-    </main>
+    </AppLayout>
   )
 }
 

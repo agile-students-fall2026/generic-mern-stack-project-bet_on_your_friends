@@ -80,6 +80,15 @@ export async function getMockGroupById(groupId) {
   return groups.find((group) => group.id === groupId) ?? null
 }
 
+export async function updateMockPredictionCount(groupId, count) {
+  const groups = await loadMockGroups()
+  const group = groups.find((item) => item.id === groupId)
+  if (group) {
+    group.openPredictions = count
+    saveMockGroups(groups)
+  }
+}
+
 // get group invite code
 export async function getMockGroupByInviteCode(inviteCode) {
   const groups = await loadMockGroups()

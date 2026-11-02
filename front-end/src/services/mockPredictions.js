@@ -1,43 +1,50 @@
 import { fakerEN as faker } from '@faker-js/faker'
-import { getCurrentMockAccount } from './mockSignUp.js'
+import { getMockAccounts, getRegisteredMockAccount, saveMockAccount } from './mockSignUp.js'
+import { getMockGroupById, updateMockPredictionCount } from './mockGroups.js'
 
-let mockData
+const storageKey = 'betOnYourFriendsPredictions'
+const groupPredictions = JSON.parse(sessionStorage.getItem(storageKey) || '{}')
 
-export async function getMockPredictionData() {
-  const account = getCurrentMockAccount()
-  if (!account) throw new Error('Create an account to view predictions.')
-  if (!mockData) {
-    const users = [account, ...Array.from({ length: 2 }, () => ({
-      id: faker.string.uuid(),
-      name: faker.person.fullName(),
-      coinBalance: faker.number.int({ min: 100, max: 1000 }),
-    }))]
-    const predictions = users.map((user, index) => {
-      const deadline = index === 2 ? faker.date.recent({ days: 7 }) : faker.date.soon({ days: 14 })
+export async function getMockPredictionData(groupId, user) {
+  const group = await getMockGroupById(groupId)
+  const account = getRegisteredMockAccount(user.email) || user
+  if (!group || !group.memberIds.includes(account.id)) throw new Error('Group not found.')
+  saveMockAccount(account)
+  for (const id of group.memberIds) {
+    if (!getMockAccounts().some((member) => member.id === id)) {
+      saveMockAccount({ id, name: faker.person.fullName(), email: `${id}@example.test`, coinBalance: faker.number.int({ min: 100, max: 1000 }) })
+    }
+  }
+  const members = getMockAccounts().filter((member) => group.memberIds.includes(member.id))
+  if (!groupPredictions[groupId]) {
+    groupPredictions[groupId] = Array.from({ length: group.openPredictions }, (_value, index) => {
+      const creator = members[index % members.length]
+      const deadline = faker.date.soon({ days: 14 })
       deadline.setMinutes(deadline.getMinutes() - deadline.getTimezoneOffset())
       return {
-        id: faker.string.uuid(),
-        creatorId: index === 1 ? user.id : users[0].id,
-        question: `Which city will ${user.name} visit next?`,
+        id: crypto.randomUUID(),
+        creatorId: creator.id,
+        question: `Which city will ${creator.displayName || creator.name} visit next?`,
         outcomes: faker.helpers.uniqueArray(() => faker.location.city(), 2),
         deadline: deadline.toISOString().slice(0, 16),
         bets: [],
         result: null,
       }
     })
-    for (let index = 1; index < users.length; index++) {
-      const amount = faker.number.int({ min: 1, max: 50 })
-      users[index].coinBalance -= amount
-      predictions[2].bets.push({ userId: users[index].id, outcome: predictions[2].outcomes[index - 1], amount })
-    }
-    mockData = { groupName: faker.company.name(), currentUserId: users[0].id, users, predictions }
   }
-  if (!mockData.users.includes(account)) mockData.users.push(account)
-  mockData.currentUserId = account.id
-  for (const prediction of mockData.predictions) {
+  const data = { group, users: getMockAccounts(), currentUserId: account.id, predictions: groupPredictions[groupId] }
+  for (const prediction of data.predictions) {
     prediction.bettingClosed = new Date(prediction.deadline) <= new Date()
   }
-  return mockData
+  await savePredictionData(data)
+  return data
+}
+
+async function savePredictionData(data) {
+  groupPredictions[data.group.id] = data.predictions
+  sessionStorage.setItem(storageKey, JSON.stringify(groupPredictions))
+  const count = data.predictions.filter((prediction) => !prediction.result && new Date(prediction.deadline) > new Date()).length
+  await updateMockPredictionCount(data.group.id, count)
 }
 
 function findPrediction(data, id) {
@@ -66,34 +73,33 @@ function checkEditable(data, prediction) {
   if (prediction.bets.length > 0) throw new Error('This prediction cannot be changed after someone bets.')
 }
 
-export async function createMockPrediction(values) {
-  const data = await getMockPredictionData()
+export async function createMockPrediction(data, values) {
   const fields = checkForm(values)
-  const prediction = { id: faker.string.uuid(), creatorId: data.currentUserId, ...fields, bets: [], result: null }
+  const prediction = { id: crypto.randomUUID(), creatorId: data.currentUserId, ...fields, bets: [], result: null }
   data.predictions.push(prediction)
+  await savePredictionData(data)
   return prediction
 }
 
-export async function editMockPrediction(id, values) {
-  const data = await getMockPredictionData()
+export async function editMockPrediction(data, id, values) {
   const prediction = findPrediction(data, id)
   checkEditable(data, prediction)
   const fields = checkForm(values)
   prediction.question = fields.question
   prediction.outcomes = fields.outcomes
   prediction.deadline = fields.deadline
+  await savePredictionData(data)
 }
 
-export async function deleteMockPrediction(id) {
-  const data = await getMockPredictionData()
+export async function deleteMockPrediction(data, id) {
   checkEditable(data, findPrediction(data, id))
   data.predictions = data.predictions.filter((prediction) => prediction.id !== id)
+  await savePredictionData(data)
 }
 
-export async function placeMockBet(id, outcome, amount) {
-  const data = await getMockPredictionData()
+export async function placeMockBet(data, id, outcome, amount) {
   const prediction = findPrediction(data, id)
-  const user = data.users.find((item) => item.id === data.currentUserId)
+  const user = getMockAccounts().find((item) => item.id === data.currentUserId)
   if (prediction.result || new Date(prediction.deadline) <= new Date()) throw new Error('Betting is closed.')
   if (prediction.creatorId === user.id) throw new Error('You cannot bet on your own prediction.')
   if (prediction.bets.some((bet) => bet.userId === user.id)) throw new Error('You can only bet once on each prediction.')
@@ -103,10 +109,11 @@ export async function placeMockBet(id, outcome, amount) {
   if (coins > user.coinBalance) throw new Error('You do not have enough coins.')
   user.coinBalance -= coins
   prediction.bets.push({ userId: user.id, outcome, amount: coins })
+  saveMockAccount(user)
+  await savePredictionData(data)
 }
 
-export async function resolveMockPrediction(id, outcome) {
-  const data = await getMockPredictionData()
+export async function resolveMockPrediction(data, id, outcome) {
   const prediction = findPrediction(data, id)
   if (prediction.creatorId !== data.currentUserId) throw new Error('Only the creator can resolve this prediction.')
   if (prediction.result) throw new Error('This prediction has already been resolved.')
@@ -120,8 +127,9 @@ export async function resolveMockPrediction(id, outcome) {
   }
   if (winningPool === 0) {
     for (const bet of prediction.bets) {
-      const user = data.users.find((item) => item.id === bet.userId)
+      const user = getMockAccounts().find((item) => item.id === bet.userId)
       user.coinBalance += bet.amount
+      saveMockAccount(user)
     }
     prediction.refunded = pool > 0
   } else {
@@ -130,10 +138,12 @@ export async function resolveMockPrediction(id, outcome) {
     winners.forEach((bet, index) => {
       let payout = Math.floor(pool * bet.amount / winningPool)
       if (index === winners.length - 1) payout = remaining
-      const user = data.users.find((item) => item.id === bet.userId)
+      const user = getMockAccounts().find((item) => item.id === bet.userId)
       user.coinBalance += payout
+      saveMockAccount(user)
       remaining -= payout
     })
   }
   prediction.result = outcome
+  await savePredictionData(data)
 }
