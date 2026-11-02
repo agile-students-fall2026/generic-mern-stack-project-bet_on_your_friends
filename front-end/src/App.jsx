@@ -1,10 +1,24 @@
-
-import { Link, Routes, Route, useLocation } from 'react-router-dom'
+import { Link, Navigate, Routes, Route } from 'react-router-dom'
+import AppLayout from './components/AppLayout'
+import RequireAuth from './components/RequireAuth'
+import { useAuth } from './context/auth'
 import CreateAccount from './pages/CreateAccount'
+import CreateGroup from './pages/CreateGroup'
+import InviteFriends from './pages/InviteFriends'
+import JoinGroup from './pages/JoinGroup'
+import Login from './pages/Login'
+import MyGroups from './pages/MyGroups'
+import Profile from './pages/Profile'
 import Predictions from './pages/Predictions'
 
-// home page with just links to sign up or log in
+// home page with sign up or login
 function Home() {
+  const { user } = useAuth()
+
+  if (user) {
+    return <Navigate to="/groups" replace />
+  }
+
   return (
     <main className="min-h-screen bg-[#f8f5fb] px-4 py-12">
       <div className="mx-auto max-w-md text-center">
@@ -37,49 +51,44 @@ function Home() {
   )
 }
 
-// login page -> to be implemented
-function Login() {
+// my bets page
+function MyBets() {
   return (
-    <main className="p-6">
-      <h1>Log In</h1>
+    <AppLayout title="My Bets">
       <p>This page has not been implemented yet.</p>
-      <Link to="/">Back to Home</Link>
-    </main>
+    </AppLayout>
   )
 }
 
-// my groups page -> to be implemented
-function MyGroups() {
-  const location = useLocation()
-
+// leaderboard page
+function Leaderboard() {
   return (
-    <main className="p-6">
-      <h1>My Groups</h1>
-
-      {location.state?.signupCompleted && (
-        <p>Account registration completed successfully.</p>
-      )}
-      {/* for team, remove this comment once you implemented this -> carry over the 
-      same user from create account to this page, and the rest of the pages in the app. we should
-      display their coin balance here and on other pages + require account to be 
-      logged in every time the given page is open */}
+    <AppLayout title="Leaderboard">
       <p>This page has not been implemented yet.</p>
-      <p><Link to="/predictions">View predictions</Link></p>
-      <Link to="/">Back to Home</Link>
-    </main>
+    </AppLayout>
   )
 }
 
-// app itself, routes for the homepage, sign up, login, and
-// a bare bones page not found
+// routes for the homepage, sign up, login, etc.
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/signup" element={<CreateAccount />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/groups" element={<MyGroups />} />
-      <Route path="/predictions" element={<Predictions />} />
+
+      <Route element={<RequireAuth />}>
+        <Route path="/groups" element={<MyGroups />} />
+        <Route path="/predictions" element={<Navigate to="/groups" replace />} />
+        <Route path="/groups/new" element={<CreateGroup />} />
+        <Route path="/groups/:groupId" element={<Predictions />} />
+        <Route path="/groups/:groupId/invite" element={<InviteFriends />} />
+        <Route path="/join/:inviteCode" element={<JoinGroup />} />
+        <Route path="/bets" element={<MyBets />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/profile" element={<Profile />} />
+      </Route>
+
       <Route path="*" element={<Home />} />
     </Routes>
   )

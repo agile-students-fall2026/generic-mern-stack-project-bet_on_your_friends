@@ -2,8 +2,9 @@
 // includes emails that are already registered, creates account with 1,000 coins,
 // a new user id, and stores their info in-session, rather than on a database
 
-// keep track of registered emails
-const registeredMockEmails = new Set()
+// keep track of registered accounts
+// looked up by their email
+const registeredMockAccounts = new Map()
 
 // ID for the next user (e.g. first user to ever sign up is id 1, next is 2, etc.)
 let nextUserId = 1
@@ -15,7 +16,17 @@ export function getCurrentMockAccount() {
 
 // check whether an email is already registered
 export function isEmailRegistered(email) {
-  return registeredMockEmails.has(email.trim().toLowerCase())
+  return registeredMockAccounts.has(email.trim().toLowerCase())
+}
+
+// get a registered account by email
+export function getRegisteredMockAccount(email) {
+  return registeredMockAccounts.get(email.trim().toLowerCase()) ?? null
+}
+
+// save an account for rest of session
+export function saveMockAccount(user) {
+  registeredMockAccounts.set(user.email, user)
 }
 
 // simulate creating an account
@@ -36,8 +47,8 @@ export async function registerMockAccount({ name, email }) {
     // we determine what users can actually redeem or use these coins for besides gambling
   }
 
-  // put email onto the list so that it can't be registered twice
-  registeredMockEmails.add(normalizedEmail)
+  // save account
+  saveMockAccount(user)
 
   currentMockAccount = user
   return user
