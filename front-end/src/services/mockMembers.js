@@ -1,4 +1,3 @@
-
 import { Faker, en } from '@faker-js/faker'
 import { getMockGroupById } from './mockGroups'
 import { getMockAccountById } from './mockSignUp'

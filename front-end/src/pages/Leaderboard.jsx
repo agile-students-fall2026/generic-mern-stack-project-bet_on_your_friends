@@ -12,6 +12,15 @@ function Leaderboard() {
   const [error, setError] = useState('')
   const selected = params.get('group') || ''
   // Reload rankings when the selected group or user changes.
+
+  const [today] = useState(() =>
+  new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+)
+
   useEffect(() => {
     let active = true
     async function load() {
@@ -74,8 +83,12 @@ function Leaderboard() {
             </select>
           </label>
           <p className="mt-4 text-sm text-gray-500">
-            Ranked by virtual coin balance. Equal balances share a rank.
-          </p>
+            {data.members.length} members · {today}
+            </p>
+            <p className="mt-3 text-sm text-gray-500">
+              Ranked by available virtual coins, highest first. Stakes in open
+              bets are not available coins.
+              </p>
           <ol className="mt-4 space-y-3">
             {data.members.map((member) => {
               const rank =
