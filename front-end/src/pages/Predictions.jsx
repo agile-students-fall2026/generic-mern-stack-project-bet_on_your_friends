@@ -101,7 +101,12 @@ function Predictions() {
   }
 
   if (!data) {
-    return <main className="p-6"><p role="status">{error || 'Loading predictions...'}</p></main>
+    return (
+      <main className="p-6">
+        <p role="status">{error || 'Loading predictions...'}</p>
+        {error && <Link to="/signup">Create account</Link>}
+      </main>
+    )
   }
 
   const user = data.users.find((person) => person.id === data.currentUserId)

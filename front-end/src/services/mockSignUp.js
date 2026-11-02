@@ -7,6 +7,11 @@ const registeredMockEmails = new Set()
 
 // ID for the next user (e.g. first user to ever sign up is id 1, next is 2, etc.)
 let nextUserId = 1
+let currentMockAccount
+
+export function getCurrentMockAccount() {
+  return currentMockAccount
+}
 
 // check whether an email is already registered
 export function isEmailRegistered(email) {
@@ -34,5 +39,6 @@ export async function registerMockAccount({ name, email }) {
   // put email onto the list so that it can't be registered twice
   registeredMockEmails.add(normalizedEmail)
 
+  currentMockAccount = user
   return user
 }

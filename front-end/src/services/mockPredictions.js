@@ -1,16 +1,39 @@
+import { fakerEN as faker } from '@faker-js/faker'
+import { getCurrentMockAccount } from './mockSignUp.js'
+
 let mockData
-let nextPredictionId
 
 export async function getMockPredictionData() {
+  const account = getCurrentMockAccount()
+  if (!account) throw new Error('Create an account to view predictions.')
   if (!mockData) {
-    const response = await fetch('/mock-predictions.json')
-    if (!response.ok) throw new Error('Could not load predictions.')
-    const result = await response.json()
-    if (!mockData) {
-      mockData = result
-      nextPredictionId = Math.max(0, ...mockData.predictions.map((prediction) => prediction.id)) + 1
+    const users = [account, ...Array.from({ length: 2 }, () => ({
+      id: faker.string.uuid(),
+      name: faker.person.fullName(),
+      coinBalance: faker.number.int({ min: 100, max: 1000 }),
+    }))]
+    const predictions = users.map((user, index) => {
+      const deadline = index === 2 ? faker.date.recent({ days: 7 }) : faker.date.soon({ days: 14 })
+      deadline.setMinutes(deadline.getMinutes() - deadline.getTimezoneOffset())
+      return {
+        id: faker.string.uuid(),
+        creatorId: index === 1 ? user.id : users[0].id,
+        question: `Which city will ${user.name} visit next?`,
+        outcomes: faker.helpers.uniqueArray(() => faker.location.city(), 2),
+        deadline: deadline.toISOString().slice(0, 16),
+        bets: [],
+        result: null,
+      }
+    })
+    for (let index = 1; index < users.length; index++) {
+      const amount = faker.number.int({ min: 1, max: 50 })
+      users[index].coinBalance -= amount
+      predictions[2].bets.push({ userId: users[index].id, outcome: predictions[2].outcomes[index - 1], amount })
     }
+    mockData = { groupName: faker.company.name(), currentUserId: users[0].id, users, predictions }
   }
+  if (!mockData.users.includes(account)) mockData.users.push(account)
+  mockData.currentUserId = account.id
   for (const prediction of mockData.predictions) {
     prediction.bettingClosed = new Date(prediction.deadline) <= new Date()
   }
@@ -46,7 +69,7 @@ function checkEditable(data, prediction) {
 export async function createMockPrediction(values) {
   const data = await getMockPredictionData()
   const fields = checkForm(values)
-  const prediction = { id: nextPredictionId++, creatorId: data.currentUserId, ...fields, bets: [], result: null }
+  const prediction = { id: faker.string.uuid(), creatorId: data.currentUserId, ...fields, bets: [], result: null }
   data.predictions.push(prediction)
   return prediction
 }
