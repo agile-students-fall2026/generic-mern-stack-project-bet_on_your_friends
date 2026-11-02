@@ -1,12 +1,20 @@
 import { useState } from 'react'
+import ConfirmModal from './ConfirmModal'
+import { getPredictionErrors, maxOutcomes, maxOutcomeLength } from '../services/mockPredictions'
 
-const inputStyle = 'mt-2 w-full rounded-lg border border-gray-300 p-3'
+function inputStyle(hasError) {
+  return `mt-2 w-full rounded-lg border p-3 ${hasError ? 'border-red-600' : 'border-gray-300'}`
+}
 
-function PredictionForm({ prediction, onSave, onCancel }) {
+function PredictionForm({ prediction, onSave, onCancel, error }) {
   const [question, setQuestion] = useState(prediction ? prediction.question : '')
   const [outcomes, setOutcomes] = useState(prediction ? [...prediction.outcomes] : ['', ''])
   const [deadline, setDeadline] = useState(prediction ? prediction.deadline : '')
   const [saving, setSaving] = useState(false)
+  const [removeIndex, setRemoveIndex] = useState(null)
+  const errors = getPredictionErrors({ question, outcomes, deadline })
+  const showOutcomeError = outcomes.some((outcome) => outcome !== '') && errors.outcomes
+  const formValid = Object.keys(errors).length === 0 && !saving
 
   function changeOutcome(index, value) {
     const updated = [...outcomes]
@@ -16,48 +24,64 @@ function PredictionForm({ prediction, onSave, onCancel }) {
 
   async function handleSubmit(event) {
     event.preventDefault()
+    if (!formValid) return
     setSaving(true)
     await onSave({ question, outcomes, deadline })
     setSaving(false)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-      <h2 className="text-xl font-bold">{prediction ? 'Edit Prediction' : 'Create Prediction'}</h2>
-      <label className="block font-medium">
-        Question
-        <textarea required value={question} onChange={(event) => setQuestion(event.target.value)} className={inputStyle} />
-      </label>
-      <fieldset className="space-y-3">
-        <legend className="font-medium">Outcomes</legend>
-        {outcomes.map((outcome, index) => (
-          <div key={index}>
-            <label className="block">
-              Outcome {index + 1}
-              <input required value={outcome} onChange={(event) => changeOutcome(index, event.target.value)} className={inputStyle} />
-            </label>
-            {outcomes.length > 2 && (
-              <button type="button" onClick={() => setOutcomes(outcomes.filter((value, position) => position !== index))} className="mt-1 text-sm text-nyu-violet">
-                Remove outcome {index + 1}
-              </button>
-            )}
-          </div>
-        ))}
-        <button type="button" onClick={() => setOutcomes([...outcomes, ''])} className="font-semibold text-nyu-violet">
-          + Add outcome
-        </button>
-      </fieldset>
-      <label className="block font-medium">
-        Betting deadline
-        <input type="datetime-local" required value={deadline} onChange={(event) => setDeadline(event.target.value)} className={inputStyle} />
-      </label>
-      <div className="flex gap-3">
-        <button type="button" onClick={onCancel} className="flex-1 rounded-lg border border-gray-300 p-3">Cancel</button>
-        <button disabled={saving} className="flex-1 rounded-lg bg-nyu-violet p-3 font-semibold text-white disabled:bg-gray-300">
-          {prediction ? 'Save changes' : 'Post prediction'}
-        </button>
-      </div>
-    </form>
+    <>
+      <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        <h2 className="text-3xl font-bold text-nyu-violet">{prediction ? 'Edit Prediction' : 'Create Prediction'}</h2>
+        <label className="block font-medium">
+          Question
+          <textarea required value={question} onChange={(event) => setQuestion(event.target.value)} className={inputStyle(question && errors.question)} />
+          {question && errors.question && <span role="alert" className="mt-1 block text-sm text-red-600">{errors.question}</span>}
+        </label>
+        <fieldset className="space-y-3">
+          <legend className="font-medium">Outcomes</legend>
+          {outcomes.map((outcome, index) => (
+            <div key={index}>
+              <label className="block">
+                Outcome {index + 1}
+                <input required maxLength={maxOutcomeLength} value={outcome} onChange={(event) => changeOutcome(index, event.target.value)} className={inputStyle(showOutcomeError)} />
+              </label>
+              {outcomes.length > 2 && (
+                <button type="button" onClick={() => setRemoveIndex(index)} className="mt-1 text-sm text-nyu-violet">
+                  Remove outcome {index + 1}
+                </button>
+              )}
+            </div>
+          ))}
+          {showOutcomeError && <p role="alert" className="text-sm text-red-600">{errors.outcomes}</p>}
+          <button type="button" disabled={outcomes.length >= maxOutcomes} onClick={() => setOutcomes([...outcomes, ''])} className="font-semibold text-nyu-violet disabled:text-gray-400">
+            + Add outcome
+          </button>
+        </fieldset>
+        <label className="block font-medium">
+          Betting deadline
+          <input type="datetime-local" required value={deadline} onChange={(event) => setDeadline(event.target.value)} className={inputStyle(deadline && errors.deadline)} />
+          {deadline && errors.deadline && <span role="alert" className="mt-1 block text-sm text-red-600">{errors.deadline}</span>}
+        </label>
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        <div className="flex gap-3">
+          <button type="button" onClick={onCancel} className="flex-1 rounded-lg border border-gray-300 p-3">Cancel</button>
+          <button disabled={!formValid} className="flex-1 rounded-lg bg-nyu-violet p-3 font-semibold text-white disabled:bg-gray-300">
+            {prediction ? 'Save changes' : 'Post prediction'}
+          </button>
+        </div>
+      </form>
+      {removeIndex !== null && (
+        <ConfirmModal
+          title="Remove outcome?"
+          message={`Remove outcome ${removeIndex + 1}? Its text will be lost.`}
+          confirmText="Remove"
+          onConfirm={() => { setOutcomes(outcomes.filter((value, index) => index !== removeIndex)); setRemoveIndex(null) }}
+          onCancel={() => setRemoveIndex(null)}
+        />
+      )}
+    </>
   )
 }
 

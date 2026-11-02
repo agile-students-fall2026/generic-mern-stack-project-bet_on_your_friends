@@ -79,7 +79,6 @@ function App() {
 
       <Route element={<RequireAuth />}>
         <Route path="/groups" element={<MyGroups />} />
-        <Route path="/predictions" element={<Navigate to="/groups" replace />} />
         <Route path="/groups/new" element={<CreateGroup />} />
         <Route path="/groups/:groupId" element={<Predictions />} />
         <Route path="/groups/:groupId/invite" element={<InviteFriends />} />

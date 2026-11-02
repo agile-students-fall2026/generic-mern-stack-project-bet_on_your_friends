@@ -143,13 +143,14 @@ function Predictions() {
   return (
     <AppLayout title={data.group.name} back="/groups">
         <Link to="invite" className="font-semibold text-nyu-violet">Invite friends</Link>
-        {error && <p role="alert" className="mt-4 text-red-600">{error}</p>}
+        {!showForm && error && <p role="alert" className="mt-4 text-red-600">{error}</p>}
         {message && <p role="status" className="mt-4 text-nyu-violet">{message}</p>}
 
         {showForm ? (
           <PredictionForm
             key={editing ? editing.id : 'new'}
             prediction={editing}
+            error={error}
             onSave={savePrediction}
             onCancel={() => { setShowForm(false); setEditing(null); setError('') }}
           />

@@ -4,6 +4,8 @@ import { getMockGroupById, updateMockPredictionCount } from './mockGroups.js'
 
 const storageKey = 'betOnYourFriendsPredictions'
 const groupPredictions = JSON.parse(sessionStorage.getItem(storageKey) || '{}')
+export const maxOutcomes = 5
+export const maxOutcomeLength = 250
 
 export async function getMockPredictionData(groupId, user) {
   const group = await getMockGroupById(groupId)
@@ -53,18 +55,30 @@ function findPrediction(data, id) {
   return prediction
 }
 
-function checkForm({ question, outcomes, deadline }) {
+export function getPredictionErrors({ question, outcomes, deadline }) {
+  const errors = {}
   const cleanOutcomes = outcomes.map((outcome) => outcome.trim())
-  if (!question.trim() || cleanOutcomes.length < 2 || cleanOutcomes.some((outcome) => !outcome)) {
-    throw new Error('Enter a question and at least two outcomes.')
+  if (!question.trim()) errors.question = 'Enter a question.'
+  if (cleanOutcomes.length < 2 || cleanOutcomes.length > maxOutcomes || cleanOutcomes.some((outcome) => !outcome)) {
+    errors.outcomes = 'Enter between two and five outcomes.'
+  } else if (outcomes.some((outcome) => outcome.length > maxOutcomeLength)) {
+    errors.outcomes = 'Keep each outcome within 250 characters.'
+  } else if (new Set(cleanOutcomes.map((outcome) => outcome.toLowerCase())).size !== cleanOutcomes.length) {
+    errors.outcomes = 'Each outcome must be different.'
   }
-  if (new Set(cleanOutcomes.map((outcome) => outcome.toLowerCase())).size !== cleanOutcomes.length) {
-    throw new Error('Each outcome must be different.')
+  const latestDeadline = new Date()
+  latestDeadline.setFullYear(latestDeadline.getFullYear() + 1)
+  const chosenDeadline = new Date(deadline)
+  if (!deadline || Number.isNaN(chosenDeadline.getTime()) || chosenDeadline <= new Date() || chosenDeadline > latestDeadline) {
+    errors.deadline = 'Choose a future deadline within the next year.'
   }
-  if (!deadline || Number.isNaN(new Date(deadline).getTime()) || new Date(deadline) <= new Date()) {
-    throw new Error('Choose a betting deadline in the future.')
-  }
-  return { question: question.trim(), outcomes: cleanOutcomes, deadline }
+  return errors
+}
+
+function checkForm(values) {
+  const errors = getPredictionErrors(values)
+  if (Object.keys(errors).length > 0) throw new Error(Object.values(errors)[0])
+  return { question: values.question.trim(), outcomes: values.outcomes.map((outcome) => outcome.trim()), deadline: values.deadline }
 }
 
 function checkEditable(data, prediction) {
