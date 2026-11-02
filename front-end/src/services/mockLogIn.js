@@ -1,8 +1,18 @@
 // mock log in for returning users on Bet on Your Friends
-// includes emails that are already registered, checks for correct password,
-// and stores their info in-session, rather than on a database
-
+import { faker } from '@faker-js/faker'
+import { addMockMemberships } from './mockGroups'
 import { getRegisteredMockAccount, saveMockAccount } from './mockSignUp'
+
+// generates the same mock account always
+function seedFromEmail(email) {
+  let seed = 0
+
+  for (const character of email) {
+    seed = (seed * 31 + character.charCodeAt(0)) % 2147483647
+  }
+
+  return seed
+}
 
 // simulate logging in
 export async function logInMockAccount({ email, password }) {
@@ -18,20 +28,17 @@ export async function logInMockAccount({ email, password }) {
     return sessionAccount
   }
 
-  // else search mock users
-  const response = await fetch('/mock-data/users.json')
-  if (!response.ok) {
-    throw new Error('Unable to log in. Please try again.')
+  // else generate the returning account
+  faker.seed(seedFromEmail(normalizedEmail))
+
+  const user = {
+    id: faker.string.uuid(),
+    name: faker.person.fullName(),
+    email: normalizedEmail,
+    coinBalance: faker.number.int({ min: 100, max: 3000 })
   }
 
-  const mockUsers = await response.json()
-  const user = mockUsers.find(
-    (mockUser) => mockUser.email.toLowerCase() === normalizedEmail
-  )
-
-  if (!user) {
-    throw new Error('Incorrect email or password.')
-  }
+  await addMockMemberships(user.id)
 
   saveMockAccount(user)
 

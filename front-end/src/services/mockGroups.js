@@ -1,44 +1,65 @@
-// mock starting groups that keeps any created or joined during session
-
+import { faker } from '@faker-js/faker'
 const storageKey = 'betOnYourFriendsGroups'
 
+// same seed/data every time
+const mockSeed = 2026
+
+const mockGroupCount = 8
+
 let mockGroupsRequest = null
+
+// capitalize each word
+function toTitleCase(text) {
+  return text.replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+// generate mock groups
+function generateMockGroups() {
+  faker.seed(mockSeed)
+
+  return faker.helpers.multiple(
+    () => {
+      const memberIds = faker.helpers.multiple(() => faker.string.uuid(), {
+        count: { min: 2, max: 8 }
+      })
+
+      return {
+        id: faker.string.uuid(),
+        name: toTitleCase(`${faker.word.adjective()} ${faker.word.noun()}`),
+        description: faker.company.catchPhrase(),
+        visibility: 'private',
+        whoCanInvite: faker.helpers.arrayElement(['all', 'admins']),
+        inviteCode: faker.string.alphanumeric({ length: 6, casing: 'upper' }),
+        adminIds: [memberIds[0]],
+        memberIds: memberIds,
+        openPredictions: faker.number.int({ min: 0, max: 5 })
+      }
+    },
+    { count: mockGroupCount }
+  )
+}
 
 // load mock groups
 function loadMockGroups() {
   if (!mockGroupsRequest) {
     const savedGroups = sessionStorage.getItem(storageKey)
 
-    mockGroupsRequest = savedGroups
-      ? Promise.resolve(JSON.parse(savedGroups))
-      : fetch('/mock-data/groups.json').then((response) => {
-          if (!response.ok) {
-            throw new Error('Unable to load groups. Please try again.')
-          }
-          return response.json()
-        })
-
-    mockGroupsRequest.catch(() => {
-      mockGroupsRequest = null
-    })
+    mockGroupsRequest = Promise.resolve(
+      savedGroups ? JSON.parse(savedGroups) : generateMockGroups()
+    )
   }
 
   return mockGroupsRequest
 }
 
-// save groups for the rest of the session
+// save groups for session
 function saveMockGroups(groups) {
   sessionStorage.setItem(storageKey, JSON.stringify(groups))
 }
 
 // random, unclaimed 6-alphanumeric invite code
 function createInviteCode(groups) {
-  const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let inviteCode = ''
-
-  for (let i = 0; i < 6; i++) {
-    inviteCode += characters[Math.floor(Math.random() * characters.length)]
-  }
+  const inviteCode = faker.string.alphanumeric({ length: 6, casing: 'upper' })
 
   if (groups.some((group) => group.inviteCode === inviteCode)) {
     return createInviteCode(groups)
@@ -65,6 +86,21 @@ export async function getMockGroupByInviteCode(inviteCode) {
   return (
     groups.find((group) => group.inviteCode === inviteCode.toUpperCase()) ?? null
   )
+}
+
+// returning users already belong to some groups
+export async function addMockMemberships(userId) {
+  const groups = await loadMockGroups()
+
+  if (groups.some((group) => group.memberIds.includes(userId))) return
+
+  const generatedGroups = groups.slice(0, mockGroupCount)
+
+  for (const group of faker.helpers.arrayElements(generatedGroups, 3)) {
+    group.memberIds.push(userId)
+  }
+
+  saveMockGroups(groups)
 }
 
 // simulate creating a group

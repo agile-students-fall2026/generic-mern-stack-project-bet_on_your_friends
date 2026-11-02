@@ -1,7 +1,7 @@
-
-import { Link, Routes, Route } from 'react-router-dom'
+import { Link, Navigate, Routes, Route } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import RequireAuth from './components/RequireAuth'
+import { useAuth } from './context/auth'
 import CreateAccount from './pages/CreateAccount'
 import CreateGroup from './pages/CreateGroup'
 import InviteFriends from './pages/InviteFriends'
@@ -10,8 +10,14 @@ import Login from './pages/Login'
 import MyGroups from './pages/MyGroups'
 import Profile from './pages/Profile'
 
-// home page with just links to sign up or log in
+// home page with sign up or login
 function Home() {
+  const { user } = useAuth()
+
+  if (user) {
+    return <Navigate to="/groups" replace />
+  }
+
   return (
     <main className="min-h-screen bg-[#f8f5fb] px-4 py-12">
       <div className="mx-auto max-w-md text-center">
