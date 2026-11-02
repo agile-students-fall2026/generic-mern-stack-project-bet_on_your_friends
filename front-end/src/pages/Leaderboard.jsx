@@ -8,6 +8,9 @@ import { getMockMembers } from '../services/mockMembers'
 function Leaderboard() {
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
+   // limit the number of users on the leaderboard to 
+   // just the top 3 + 1 spot for the user if they're not top 3
+  const [limit, setLimit] = useState(5)
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const selected = params.get('group') || ''
@@ -32,14 +35,26 @@ function Leaderboard() {
       let members = []
       if (group) {
         members = await getMockMembers(group.id, user)
-      }
-      // Highest balances first and sort equal balances by name.
+      }      
+      // TODO: limit the number of members shown here to the top 3,
+      //  or 4 members if the signed in user isn't in the top 3
+
+      // Comparison and sorting of group members
+      // to get the ranked order of coin balances
+      // Highest balances first and sort equal balances by name
+      // if there's a tie, we decide by the name of the user alphabetically
+
+      // TODO: change ties so that it appears as 1, 2, 2, 4 instead of 
+      // breaking the tie using the name of the two users 
+      // (would break if we have John Doe & John Doe with both 1,000 coins)
       members.sort((firstMember, secondMember) => {
         const balanceDifference =
           secondMember.coinBalance - firstMember.coinBalance
         if (balanceDifference !== 0) {
           return balanceDifference
         }
+        // localCompare - returns a number indicating whether a reference string
+        // comes before, after, or is the same as the given string in order
         return getDisplayName(firstMember).localeCompare(
           getDisplayName(secondMember)
         )
@@ -90,6 +105,8 @@ function Leaderboard() {
               bets are not available coins.
               </p>
           <ol className="mt-4 space-y-3">
+            {/* put member's name + their coin balance as one slot in the leaderboard */}
+            {/* ranked from highest coin to least amount */}
             {data.members.map((member) => {
               const rank =
                 data.members.findIndex(
@@ -104,10 +121,13 @@ function Leaderboard() {
                     {rank}
                   </span>
                   <img
+                  // user profile image shown on the leaderboard
                     src={`https://picsum.photos/seed/${member.id}/80/80`}
                     alt=""
                     className="h-9 w-9 rounded-full"
                   />
+                  {/* leaderboard will always include where signed in user is
+                   on the leaderboard with the ranking you're at within the group */}
                   <span className="min-w-0 flex-1 break-words font-semibold">
                     {getDisplayName(member)}
                     {member.id === user.id && ' (You)'}

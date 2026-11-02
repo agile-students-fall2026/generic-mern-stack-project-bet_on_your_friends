@@ -24,6 +24,8 @@ function Profile() {
   // valid name check
   const displayNameValid = displayName.replace(/\s/g, '').length >= 3
 
+  // TODO: add functionality for the user to change their profile picture
+
   const changed = displayName.trim() !== getDisplayName(user)
 
   const formValid = displayNameValid && changed && !saving
