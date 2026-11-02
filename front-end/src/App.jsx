@@ -1,6 +1,7 @@
 
 import { Link, Routes, Route, useLocation } from 'react-router-dom'
 import CreateAccount from './pages/CreateAccount'
+import Predictions from './pages/Predictions'
 
 // home page with just links to sign up or log in
 function Home() {
@@ -63,6 +64,7 @@ function MyGroups() {
       display their coin balance here and on other pages + require account to be 
       logged in every time the given page is open */}
       <p>This page has not been implemented yet.</p>
+      <p><Link to="/predictions">View predictions</Link></p>
       <Link to="/">Back to Home</Link>
     </main>
   )
@@ -77,6 +79,7 @@ function App() {
       <Route path="/signup" element={<CreateAccount />} />
       <Route path="/login" element={<Login />} />
       <Route path="/groups" element={<MyGroups />} />
+      <Route path="/predictions" element={<Predictions />} />
       <Route path="*" element={<Home />} />
     </Routes>
   )
