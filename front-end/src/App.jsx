@@ -4,6 +4,7 @@ import RequireAuth from './components/RequireAuth'
 import { useAuth } from './context/auth'
 import CreateAccount from './pages/CreateAccount'
 import CreateGroup from './pages/CreateGroup'
+import GroupMembers from './pages/GroupMembers'
 import InviteFriends from './pages/InviteFriends'
 import JoinGroup from './pages/JoinGroup'
 import Login from './pages/Login'
@@ -55,8 +56,11 @@ function GroupPredictions() {
   return (
     <AppLayout title="Group" back="/groups">
       <p>This page has not been implemented yet.</p>
-      <Link to="invite" className="font-semibold text-nyu-violet">
+      <Link to="invite" className="block font-semibold text-nyu-violet">
         Invite friends
+      </Link>
+      <Link to="members" className="mt-2 block font-semibold text-nyu-violet">
+        Group members
       </Link>
     </AppLayout>
   )
@@ -93,6 +97,7 @@ function App() {
         <Route path="/groups/new" element={<CreateGroup />} />
         <Route path="/groups/:groupId" element={<GroupPredictions />} />
         <Route path="/groups/:groupId/invite" element={<InviteFriends />} />
+        <Route path="/groups/:groupId/members" element={<GroupMembers />} />
         <Route path="/join/:inviteCode" element={<JoinGroup />} />
         <Route path="/bets" element={<MyBets />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
