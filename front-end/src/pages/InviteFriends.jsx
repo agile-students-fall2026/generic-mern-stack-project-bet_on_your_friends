@@ -3,15 +3,18 @@ import { Link, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/auth'
-import { getMockGroupById } from '../services/mockGroups'
+import { getMockGroupById, isGroupFull } from '../services/mockGroups'
 
 function InviteFriends() {
   const { groupId } = useParams()
   const { user } = useAuth()
 
+  // group being invited to and display error form
   const [group, setGroup] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+
+  // notification after copying link on the page
   const [toastMessage, setToastMessage] = useState('')
 
   // load group user is inviting another user to
@@ -34,7 +37,7 @@ function InviteFriends() {
     }
   }, [groupId])
 
-  // toast timeout
+  // popup notification timeout
   useEffect(() => {
     if (!toastMessage) return
 
@@ -42,17 +45,34 @@ function InviteFriends() {
     return () => clearTimeout(timer)
   }, [toastMessage])
 
+  // check if user in group
   const isMember = group?.memberIds.includes(user.id)
+
+  // check if user can invite
   const canInvite =
     isMember &&
     (group.whoCanInvite === 'all' || group.adminIds.includes(user.id))
+
+  // check if group has reached member limit
+  const groupFull = group ? isGroupFull(group) : false
+
+  // current member count
+  const memberCount = group
+    ? `${group.memberIds.length}${
+        group.memberLimit != null ? `/${group.memberLimit}` : ''
+      } ${
+        group.memberIds.length === 1 && group.memberLimit == null
+          ? 'member'
+          : 'members'
+      }`
+    : ''
 
   // link to join group
   const inviteLink = group
     ? `${window.location.origin}/join/${group.inviteCode}`
     : ''
 
-  // copy invite link
+  // run upon copying invite link
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(inviteLink)
@@ -74,25 +94,45 @@ function InviteFriends() {
         </p>
       )}
 
+      {/* group not found or user not in group */}
       {!loading && !loadError && !isMember && (
         <p className="mt-4 text-gray-500">
           This group could not be found.
         </p>
       )}
 
+      {/* admins only message for others */}
       {isMember && !canInvite && (
         <>
-          <p className="mt-1 text-gray-500">{group.name}</p>
+          <p className="mt-1 text-gray-500">
+            {group.name} · {memberCount}
+          </p>
           <p className="mt-6 rounded-xl border border-gray-200 bg-white p-5 text-gray-600">
             Only admins can invite friends to this group.
           </p>
         </>
       )}
 
+      {/* group name and member count */}
       {canInvite && (
-        <>
-          <p className="mt-1 text-gray-500">{group.name}</p>
+        <p className="mt-1 text-gray-500">
+          {group.name} · {memberCount}
+        </p>
+      )}
 
+      {/* group hit limit message instead of invite link */}
+      {canInvite && groupFull && (
+        <p
+          className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5 text-red-600"
+          role="alert"
+        >
+          This group is full. No more friends can join.
+        </p>
+      )}
+
+      {/* invite link display and copy */}
+      {canInvite && !groupFull && (
+        <>
           <p className="mt-6 text-gray-700">
             Copy the link and send it to friends you want to invite.
           </p>
@@ -126,6 +166,7 @@ function InviteFriends() {
         </>
       )}
 
+      {/* link back to group */}
       {isMember && (
         <Link
           to={`/groups/${group.id}`}
