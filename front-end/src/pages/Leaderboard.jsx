@@ -8,9 +8,6 @@ import { getMockMembers } from '../services/mockMembers'
 function Leaderboard() {
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
-   // limit the number of users on the leaderboard to 
-   // just the top 3 + 1 spot for the user if they're not top 3
-  const [limit, setLimit] = useState(5)
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const selected = params.get('group') || ''
@@ -27,6 +24,8 @@ function Leaderboard() {
   useEffect(() => {
     let active = true
     async function load() {
+      setError('')
+
       const groups = await getMockGroupsForUser(user.id)
       let group = groups.find((item) => item.id === selected)
       if (!group) {
@@ -36,28 +35,12 @@ function Leaderboard() {
       if (group) {
         members = await getMockMembers(group.id, user)
       }      
-      // TODO: limit the number of members shown here to the top 3,
-      //  or 4 members if the signed in user isn't in the top 3
+      /* Shows the top 3 and includes the current user's row if they're 
+      outside top 3, with their actual rank. Removed alphabetical sorting and members
+      with the same balance now share a rank, like, 1, 2, 2, 4 */
 
-      // Comparison and sorting of group members
-      // to get the ranked order of coin balances
-      // Highest balances first and sort equal balances by name
-      // if there's a tie, we decide by the name of the user alphabetically
-
-      // TODO: change ties so that it appears as 1, 2, 2, 4 instead of 
-      // breaking the tie using the name of the two users 
-      // (would break if we have John Doe & John Doe with both 1,000 coins)
       members.sort((firstMember, secondMember) => {
-        const balanceDifference =
-          secondMember.coinBalance - firstMember.coinBalance
-        if (balanceDifference !== 0) {
-          return balanceDifference
-        }
-        // localCompare - returns a number indicating whether a reference string
-        // comes before, after, or is the same as the given string in order
-        return getDisplayName(firstMember).localeCompare(
-          getDisplayName(secondMember)
-        )
+        return secondMember.coinBalance - firstMember.coinBalance
       })
       if (active) setData({ groups, group, members, selected })
     }
@@ -73,6 +56,25 @@ function Leaderboard() {
   }
 
   const ready = data && data.selected === selected
+  let visibleMembers = []
+
+if (ready) {
+  // Show the top three members.
+  visibleMembers = data.members.slice(0, 3)
+
+  const currentMember = data.members.find((member) => {
+    return member.id === user.id
+  })
+
+  const userInTopThree = visibleMembers.some((member) => {
+    return member.id === user.id
+  })
+
+  // Add your row if you are outside the top three.
+  if (currentMember && !userInTopThree) {
+    visibleMembers.push(currentMember)
+  }
+}
   return (
     <AppLayout title="Leaderboard">
       {error && (
@@ -107,7 +109,8 @@ function Leaderboard() {
           <ol className="mt-4 space-y-3">
             {/* put member's name + their coin balance as one slot in the leaderboard */}
             {/* ranked from highest coin to least amount */}
-            {data.members.map((member) => {
+            {visibleMembers.map((member) => {
+              // Equal balances share a rank based on the full member list.
               const rank =
                 data.members.findIndex(
                   (item) => item.coinBalance === member.coinBalance
