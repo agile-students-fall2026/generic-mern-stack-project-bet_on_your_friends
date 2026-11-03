@@ -55,10 +55,13 @@ function findPrediction(data, id) {
   return prediction
 }
 
-export function getPredictionErrors({ question, outcomes, deadline }) {
+export function getPredictionErrors({ question, outcomes, deadline, stake }) {
   const errors = {}
   const cleanOutcomes = outcomes.map((outcome) => outcome.trim())
   if (!question.trim()) errors.question = 'Enter a question.'
+  if (!Number.isSafeInteger(Number(stake)) || Number(stake) < 1) {
+    errors.stake = 'Enter a positive whole number of coins.'
+  }
   if (cleanOutcomes.length < 2 || cleanOutcomes.length > maxOutcomes || cleanOutcomes.some((outcome) => !outcome)) {
     errors.outcomes = 'Enter between two and five outcomes.'
   } else if (outcomes.some((outcome) => outcome.length > maxOutcomeLength)) {
@@ -78,7 +81,7 @@ export function getPredictionErrors({ question, outcomes, deadline }) {
 function checkForm(values) {
   const errors = getPredictionErrors(values)
   if (Object.keys(errors).length > 0) throw new Error(Object.values(errors)[0])
-  return { question: values.question.trim(), outcomes: values.outcomes.map((outcome) => outcome.trim()), deadline: values.deadline }
+  return { question: values.question.trim(), outcomes: values.outcomes.map((outcome) => outcome.trim()), deadline: values.deadline, stake: Number(values.stake) }
 }
 
 function checkEditable(data, prediction) {
@@ -102,6 +105,7 @@ export async function editMockPrediction(data, id, values) {
   prediction.question = fields.question
   prediction.outcomes = fields.outcomes
   prediction.deadline = fields.deadline
+  prediction.stake = fields.stake
   await savePredictionData(data)
 }
 
@@ -119,7 +123,10 @@ export async function placeMockBet(data, id, outcome, amount) {
   if (prediction.bets.some((bet) => bet.userId === user.id)) throw new Error('You can only bet once on each prediction.')
   if (!prediction.outcomes.includes(outcome)) throw new Error('Choose an outcome.')
   const coins = Number(amount)
-  if (!Number.isInteger(coins) || coins < 1) throw new Error('Bet at least one whole coin.')
+  if (!Number.isSafeInteger(coins) || coins < 1) throw new Error('Bet at least one whole coin.')
+  if (prediction.stake !== undefined && coins !== prediction.stake) {
+    throw new Error(`This prediction requires a bet of ${prediction.stake} coins.`)
+  }
   if (coins > user.coinBalance) throw new Error('You do not have enough coins.')
   user.coinBalance -= coins
   prediction.bets.push({ userId: user.id, outcome, amount: coins })

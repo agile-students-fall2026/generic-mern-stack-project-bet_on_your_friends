@@ -76,14 +76,15 @@ function Predictions() {
 
   function requestBet(event) {
     event.preventDefault()
+    if (!betOutcome || !canBet) return
     setError('')
     setDialog({
       type: 'placeBet',
       title: 'Confirm my bet?',
-      message: `Bet ${betAmount} coins on ${betOutcome}? This cannot be undone.`,
+      message: `Bet ${coinsToBet} coins on ${betOutcome}? This cannot be undone.`,
       predictionId: selectedId,
       outcome: betOutcome,
-      amount: betAmount,
+      amount: coinsToBet,
     })
   }
 
@@ -128,6 +129,8 @@ function Predictions() {
   const isCreator = selected && selected.creatorId === user.id
   const userBet = selected && selected.bets.find((bet) => bet.userId === user.id)
   const bettingClosed = selected && selected.bettingClosed
+  const coinsToBet = selected?.stake ?? Number(betAmount)
+  const canBet = Number.isSafeInteger(coinsToBet) && coinsToBet > 0 && coinsToBet <= user.coinBalance
   let confirmText = 'Confirm'
   if (dialog?.type === 'bet') confirmText = 'Done'
   if (dialog?.type === 'placeBet') confirmText = 'Place bet'
@@ -160,6 +163,7 @@ function Predictions() {
             <h2 className="text-xl font-bold">{selected.question}</h2>
             <p>By {getDisplayName(creator)}</p>
             <p>Closes {new Date(selected.deadline).toLocaleString()}</p>
+            {selected.stake !== undefined && <p>{selected.stake} coins per bet</p>}
             <ul className="space-y-3">
               {selected.outcomes.map((outcome) => (
                 <li key={outcome} className="rounded-lg border border-gray-300 bg-white p-3">
@@ -206,12 +210,14 @@ function Predictions() {
                     </label>
                   ))}
                 </fieldset>
-                <label className="block font-medium">
-                  Coins to bet
-                  <input type="number" min="1" max={user.coinBalance} step="1" required value={betAmount} onChange={(event) => setBetAmount(event.target.value)} className={inputStyle} />
-                </label>
-                {Number(betAmount) > user.coinBalance && <p role="alert" className="text-red-600">You do not have enough coins.</p>}
-                <button disabled={!betOutcome || !betAmount || Number(betAmount) > user.coinBalance} className={buttonStyle}>Place bet</button>
+                {selected.stake === undefined && (
+                  <label className="block font-medium">
+                    Coins to bet
+                    <input type="number" min="1" max={user.coinBalance} step="1" required value={betAmount} onChange={(event) => setBetAmount(event.target.value)} className={inputStyle} />
+                  </label>
+                )}
+                {coinsToBet > user.coinBalance && <p role="alert" className="text-red-600">You do not have enough coins.</p>}
+                <button disabled={!betOutcome || !canBet} className={buttonStyle}>Place bet</button>
               </form>
             )}
           </section>

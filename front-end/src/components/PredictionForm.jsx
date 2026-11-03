@@ -10,9 +10,10 @@ function PredictionForm({ prediction, onSave, onCancel, error }) {
   const [question, setQuestion] = useState(prediction ? prediction.question : '')
   const [outcomes, setOutcomes] = useState(prediction ? [...prediction.outcomes] : ['', ''])
   const [deadline, setDeadline] = useState(prediction ? prediction.deadline : '')
+  const [stake, setStake] = useState(prediction?.stake ?? '')
   const [saving, setSaving] = useState(false)
   const [removeIndex, setRemoveIndex] = useState(null)
-  const errors = getPredictionErrors({ question, outcomes, deadline })
+  const errors = getPredictionErrors({ question, outcomes, deadline, stake })
   const showOutcomeError = outcomes.some((outcome) => outcome !== '') && errors.outcomes
   const formValid = Object.keys(errors).length === 0 && !saving
 
@@ -26,7 +27,7 @@ function PredictionForm({ prediction, onSave, onCancel, error }) {
     event.preventDefault()
     if (!formValid) return
     setSaving(true)
-    await onSave({ question, outcomes, deadline })
+    await onSave({ question, outcomes, deadline, stake })
     setSaving(false)
   }
 
@@ -60,6 +61,11 @@ function PredictionForm({ prediction, onSave, onCancel, error }) {
           </button>
         </fieldset>
         <label className="block font-medium">
+          Coins per bet
+          <input type="number" min="1" step="1" required value={stake} onChange={(event) => setStake(event.target.value)} className={inputStyle(stake !== '' && errors.stake)} />
+          {stake !== '' && errors.stake && <span role="alert" className="mt-1 block text-sm text-red-600">{errors.stake}</span>}
+        </label>
+        <label className="block font-medium">
           Betting deadline
           <input type="datetime-local" required value={deadline} onChange={(event) => setDeadline(event.target.value)} className={inputStyle(deadline && errors.deadline)} />
           {deadline && errors.deadline && <span role="alert" className="mt-1 block text-sm text-red-600">{errors.deadline}</span>}
@@ -75,7 +81,7 @@ function PredictionForm({ prediction, onSave, onCancel, error }) {
       {removeIndex !== null && (
         <ConfirmModal
           title="Remove outcome?"
-          message={`Remove outcome ${removeIndex + 1}? Its text will be lost.`}
+          message={`The text for outcome ${removeIndex + 1} will be lost.`}
           confirmText="Remove"
           onConfirm={() => { setOutcomes(outcomes.filter((value, index) => index !== removeIndex)); setRemoveIndex(null) }}
           onCancel={() => setRemoveIndex(null)}
