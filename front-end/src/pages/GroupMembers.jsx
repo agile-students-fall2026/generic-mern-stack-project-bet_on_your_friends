@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
+import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
 import {
   getMockGroupById,
   getMockGroupMembers,
-  leaveMockGroup
+  isGroupFull,
+  leaveMockGroup,
+  updateMockGroupPhoto
 } from '../services/mockGroups'
 
 function GroupMembers() {
@@ -18,6 +21,16 @@ function GroupMembers() {
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+
+  // change and display error for group picture
+  const [changingPhoto, setChangingPhoto] = useState(false)
+  const [photoError, setPhotoError] = useState('')
+
+  // group full when trying to invite
+  const [showFullWarning, setShowFullWarning] = useState(false)
+
+  // notification upon group picture change
+  const [toastMessage, setToastMessage] = useState('')
 
   // leave group confirmation and display error
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
@@ -47,6 +60,14 @@ function GroupMembers() {
     }
   }, [groupId])
 
+  // popup notification timeout
+  useEffect(() => {
+    if (!toastMessage) return
+
+    const timer = setTimeout(() => setToastMessage(''), 2500)
+    return () => clearTimeout(timer)
+  }, [toastMessage])
+
   // close confirmation with the escape key
   useEffect(() => {
     if (!showLeaveConfirm) return
@@ -62,11 +83,49 @@ function GroupMembers() {
   // check if user in the group
   const isMember = group?.memberIds.includes(user.id)
 
+  // only admins can change group picture
+  const isAdmin = group?.adminIds.includes(user.id)
+
+  // check if group has reached member limit
+  const groupFull = group ? isGroupFull(group) : false
+
   // show the user first, then everyone else
   const sortedMembers = [
     ...members.filter((member) => member.id === user.id),
     ...members.filter((member) => member.id !== user.id)
   ]
+
+  // run upon picking a new group picture
+  async function handlePhotoChange(event) {
+    const file = event.target.files[0]
+    event.target.value = ''
+
+    if (!file || changingPhoto) return
+
+    setPhotoError('')
+    setChangingPhoto(true)
+
+    try {
+      const updatedGroup = await updateMockGroupPhoto(group.id, user.id, file)
+
+      setGroup({ ...updatedGroup })
+      setToastMessage('Group picture updated.')
+    } catch (error) {
+      setPhotoError(error.message)
+    }
+
+    setChangingPhoto(false)
+  }
+
+  // run upon invite friends
+  function handleInvite() {
+    if (groupFull) {
+      setShowFullWarning(true)
+      return
+    }
+
+    navigate(`/groups/${group.id}/invite`)
+  }
 
   // run upon closing the confirmation
   function handleCancel() {
@@ -112,7 +171,39 @@ function GroupMembers() {
 
       {isMember && (
         <>
-          <h2 className="text-2xl font-bold">
+          {/* group picture display */}
+          <img
+            src={`https://picsum.photos/seed/${group.photoSeed || group.id}/600/240`}
+            alt=""
+            className="h-32 w-full rounded-xl bg-nyu-lavender object-cover shadow-sm"
+          />
+
+          {isAdmin && (
+            <label
+              className={`mt-2 inline-block rounded text-sm font-semibold focus-within:ring-2 focus-within:ring-nyu-violet ${
+                changingPhoto
+                  ? 'cursor-not-allowed text-gray-400'
+                  : 'cursor-pointer text-nyu-violet hover:text-nyu-ultraviolet'
+              }`}
+            >
+              {changingPhoto ? 'Changing group picture...' : 'Change group picture'}
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                disabled={changingPhoto}
+                onChange={handlePhotoChange}
+              />
+            </label>
+          )}
+
+          {photoError && (
+            <p className="mt-1 text-sm text-red-600" role="alert">
+              {photoError}
+            </p>
+          )}
+
+          <h2 className="mt-6 text-2xl font-bold">
             Group members · {members.length}
           </h2>
 
@@ -150,10 +241,25 @@ function GroupMembers() {
             })}
           </ul>
 
+          {/* invite friends or group full warning */}
+          <button
+            type="button"
+            onClick={handleInvite}
+            className="mt-8 w-full rounded-lg border border-nyu-violet bg-white p-3 font-semibold text-nyu-violet hover:bg-nyu-lavender"
+          >
+            Invite friends
+          </button>
+
+          {showFullWarning && (
+            <p className="mt-2 text-sm text-red-600" role="alert">
+              This group is full. No more friends can join.
+            </p>
+          )}
+
           <button
             type="button"
             onClick={() => setShowLeaveConfirm(true)}
-            className="mt-8 w-full rounded-lg border border-red-600 bg-white p-3 font-semibold text-red-600 hover:bg-red-50"
+            className="mt-3 w-full rounded-lg border border-red-600 bg-white p-3 font-semibold text-red-600 hover:bg-red-50"
           >
             Leave group
           </button>
@@ -208,6 +314,7 @@ function GroupMembers() {
           </section>
         </div>
       )}
+      <Toast message={toastMessage} />
     </AppLayout>
   )
 }

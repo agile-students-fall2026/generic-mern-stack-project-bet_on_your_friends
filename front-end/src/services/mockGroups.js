@@ -212,3 +212,18 @@ export async function leaveMockGroup(groupId, userId) {
 
   saveMockGroups(groups)
 }
+
+// simulate existing group picture change by admin
+export async function updateMockGroupPhoto(groupId, userId, file) {
+  const groups = await loadMockGroups()
+  const group = groups.find((group) => group.id === groupId)
+
+  if (!group || !group.adminIds.includes(userId)) {
+    throw new Error('Only admins can change group picture.')
+  }
+
+  group.photoSeed = await uploadMockGroupPhoto(file)
+  saveMockGroups(groups)
+
+  return group
+}
