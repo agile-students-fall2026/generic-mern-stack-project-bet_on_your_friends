@@ -45,6 +45,7 @@ function JoinGroup() {
   const groupFull = group ? isGroupFull(group) : false
 
   // run upon acceptance
+  // TODO: set a limit for the number of users that can join a group: e.g. limit it to 10-20 users
   async function handleJoin() {
     setError('')
     setJoining(true)

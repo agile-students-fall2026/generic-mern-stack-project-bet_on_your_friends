@@ -59,8 +59,9 @@ function CreateAccount() {
   const [emailError, setEmailError] = useState('')
 
 
-  // name must have at least 3 characters, not counting spaces
-  const nameValid = name.replace(/\s/g, '').length >= 3
+  // name must be 3-30 characters, not counting spaces
+  const nameMinValid = name.replace(/\s/g, '').length >= 3 
+  const nameMaxValid = name.replace(/\s/g, '').length <= 30
 
   // check user's age
   const oldEnough = isOldEnough(dateOfBirth)
@@ -86,7 +87,8 @@ function CreateAccount() {
 
   // submission is only allowed when ALL fields are valid
   const formValid =
-    nameValid &&
+    nameMinValid &&
+    nameMaxValid &&
     emailValid &&
     !emailAlreadyRegistered &&
     oldEnough &&
@@ -147,8 +149,19 @@ async function handleSubmit(event) {
               onChange={(e) => setName(e.target.value)}
             />
 
+            <p className="mt-1 text-xs text-gray-500">
+              Between 3-30 characters.
+            </p>
+
             {/* error if name is too short */}
-            {name && !nameValid && (
+            {name && !nameMinValid && (
+              <p className="mt-1 text-sm text-red-600">
+                Please enter your full name.
+              </p>
+            )}
+
+            {/* error if name is too long */}
+            {name && !nameMaxValid && (
               <p className="mt-1 text-sm text-red-600">
                 Please enter your full name.
               </p>
