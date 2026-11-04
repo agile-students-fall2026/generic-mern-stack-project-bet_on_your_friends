@@ -1,8 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
+import Toast from '../components/Toast'
 import { useAuth } from '../context/auth'
-import { createMockGroup } from '../services/mockGroups'
+import {
+  createMockGroup,
+  getRandomMockGroupPhotoSeed,
+  uploadMockGroupPhoto
+} from '../services/mockGroups'
 
 // form input stlying -> rounded boxes
 // red outline -> error
@@ -21,26 +26,111 @@ function optionStyle(selected) {
   }`
 }
 
+// above character count styling -> red text
+function countStyle(hasError) {
+  return `mt-1 block text-right text-xs font-normal ${
+    hasError ? 'text-red-600' : 'text-gray-500'
+  }`
+}
+
 // group name and description character limits
 const maxNameLength = 40
 const maxDescriptionLength = 200
+
+// members per group range
+const minMember = 2
+const maxMember = 20
 
 function CreateGroup() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
+  // group name, description, and invite permissions
   const [name, setName] = useState('')
   const [nameTouched, setNameTouched] = useState(false)
   const [description, setDescription] = useState('')
   const [whoCanInvite, setWhoCanInvite] = useState('all')
+
+  // max number of members that can join
+  const [memberLimit, setMemberLimit] = useState('')
+  const [memberLimitTouched, setMemberLimitTouched] = useState(false)
+
+  // random mock group picture until changed
+  const [photoSeed, setPhotoSeed] = useState(getRandomMockGroupPhotoSeed)
+
+  // change and display error for group picture
+  const [changingPhoto, setChangingPhoto] = useState(false)
+  const [photoError, setPhotoError] = useState('')
+
+  // notification after picture change on the page
+  const [toastMessage, setToastMessage] = useState('')
+
+  // create group and display error
   const [submitting, setSubmitting] = useState(false)
   const [createError, setCreateError] = useState('')
 
-  const nameValid = name.trim() !== ''
+  const nameEmpty = name.trim() === ''
 
-  const showNameError = nameTouched && !nameValid
+  // name too long check
+  const nameTooLong = name.length > maxNameLength
 
-  const formValid = nameValid && !submitting
+  const nameValid = !nameEmpty && !nameTooLong
+
+  // show empty name error after the user has typed or left the input
+  const showNameEmptyError = nameTouched && nameEmpty
+
+  // description too long check
+  const descriptionTooLong = description.length > maxDescriptionLength
+
+  // member limit empty check
+  const memberLimitEmpty = memberLimit === ''
+
+  // member limit within range check
+  const memberLimitInRange =
+    /^\d+$/.test(memberLimit) &&
+    Number(memberLimit) >= minMember &&
+    Number(memberLimit) <= maxMember
+
+  const memberLimitValid = !memberLimitEmpty && memberLimitInRange
+
+  // show empty member error after the user has typed or left the input
+  const showMemberLimitEmptyError = memberLimitTouched && memberLimitEmpty
+
+  const showMemberLimitRangeError = !memberLimitEmpty && !memberLimitInRange
+
+  const formValid =
+    nameValid && !descriptionTooLong && memberLimitValid && !submitting
+
+  // popup notification timeout
+  useEffect(() => {
+    if (!toastMessage) return
+
+    const timer = setTimeout(() => setToastMessage(''), 2500)
+    return () => clearTimeout(timer)
+  }, [toastMessage])
+
+  // run upon picking a new group picture from device
+  async function handlePhotoChange(event) {
+    const file = event.target.files[0]
+
+    event.target.value = ''
+
+    if (!file || changingPhoto) return
+
+    setPhotoError('')
+    setChangingPhoto(true)
+
+    try {
+      const newPhotoSeed = await uploadMockGroupPhoto(file)
+
+      setPhotoSeed(newPhotoSeed)
+      setToastMessage('Group picture updated.')
+    } catch (error) {
+      setPhotoError(error.message)
+    }
+
+    setChangingPhoto(false)
+  }
 
   // run upon form submission
   async function handleSubmit(event) {
@@ -56,6 +146,8 @@ function CreateGroup() {
         name,
         description,
         whoCanInvite,
+        memberLimit: Number(memberLimit),
+        photoSeed,
         creatorId: user.id
       })
 
@@ -75,13 +167,48 @@ function CreateGroup() {
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        {/* group picture display and change */}
+        <div>
+          <p className="font-medium">Group Picture</p>
+
+          <img
+            src={`https://picsum.photos/seed/${photoSeed}/600/240`}
+            alt=""
+            className="mt-2 h-32 w-full rounded-xl bg-nyu-lavender object-cover shadow-sm"
+          />
+
+          {/* opens photo gallery or files */}
+          <label
+            className={`mt-2 inline-block rounded text-sm font-semibold focus-within:ring-2 focus-within:ring-nyu-violet ${
+              changingPhoto
+                ? 'cursor-not-allowed text-gray-400'
+                : 'cursor-pointer text-nyu-violet hover:text-nyu-ultraviolet'
+            }`}
+          >
+            {changingPhoto ? 'Changing group picture...' : 'Change group picture'}
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              disabled={changingPhoto}
+              onChange={handlePhotoChange}
+            />
+          </label>
+
+          {photoError && (
+            <p className="mt-1 text-sm text-red-600" role="alert">
+              {photoError}
+            </p>
+          )}
+        </div>
+
         <label className="block font-medium">
           Group Name
           <input
             type="text"
             placeholder="NYU Roommates"
-            maxLength={maxNameLength}
-            className={inputStyle(showNameError)}
+            aria-invalid={showNameEmptyError || nameTooLong}
+            className={inputStyle(showNameEmptyError || nameTooLong)}
             value={name}
             onChange={(e) => {
               setName(e.target.value)
@@ -89,10 +216,21 @@ function CreateGroup() {
             }}
             onBlur={() => setNameTouched(true)}
           />
-           {/* TODO: show another error - group name has exceeded the 40 character limit */}
-          {showNameError && (
+
+          {/* character count for name */}
+          <span className={countStyle(nameTooLong)}>
+            {name.length}/{maxNameLength}
+          </span>
+
+          {showNameEmptyError && (
             <span className="mt-1 block text-sm text-red-600" role="alert">
               Enter a group name.
+            </span>
+          )}
+
+          {nameTooLong && (
+            <span className="mt-1 block text-sm text-red-600" role="alert">
+              Group name must be {maxNameLength} characters or less.
             </span>
           )}
         </label>
@@ -102,15 +240,55 @@ function CreateGroup() {
           <textarea
             rows={3}
             placeholder="Predictions for our list of chores."
-            maxLength={maxDescriptionLength}
-            className={`${inputStyle(false)} resize-none`}
+            aria-invalid={descriptionTooLong}
+            className={`${inputStyle(descriptionTooLong)} resize-none`}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
 
-          <span className="mt-1 block text-right text-xs font-normal text-gray-500">
+
+          {/* character count for description */}
+          <span className={countStyle(descriptionTooLong)}>
             {description.length}/{maxDescriptionLength}
           </span>
+
+          {descriptionTooLong && (
+            <span className="mt-1 block text-sm text-red-600" role="alert">
+              Description must be {maxDescriptionLength} characters or less.
+            </span>
+          )}
+        </label>
+
+        <label className="block font-medium">
+          Member Limit
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="10"
+            aria-invalid={showMemberLimitEmptyError || showMemberLimitRangeError}
+            className={inputStyle(
+              showMemberLimitEmptyError || showMemberLimitRangeError
+            )}
+            value={memberLimit}
+            onChange={(e) => {
+              setMemberLimit(e.target.value.trim())
+              setMemberLimitTouched(true)
+            }}
+            onBlur={() => setMemberLimitTouched(true)}
+          />
+
+          {showMemberLimitEmptyError && (
+            <span className="mt-1 block text-sm text-red-600" role="alert">
+              Enter a member limit.
+            </span>
+          )}
+
+          {showMemberLimitRangeError && (
+            <span className="mt-1 block text-sm text-red-600" role="alert">
+              Member limit is from {minMember} to{' '}
+              {maxMember}.
+            </span>
+          )}
         </label>
 
         <fieldset>
@@ -171,6 +349,8 @@ function CreateGroup() {
           {submitting ? 'Creating group...' : 'Create group'}
         </button>
       </form>
+
+      <Toast message={toastMessage} />
     </AppLayout>
   )
 }

@@ -12,11 +12,15 @@ function Login() {
   const location = useLocation()
   const { user, logIn } = useAuth()
 
+  // log in form
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  // log in and display error form
   const [loginError, setLoginError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  // back to page, else my groups
   const redirectTo = location.state?.from || '/groups'
 
   // check for valid email format
@@ -53,6 +57,7 @@ function Login() {
     <main className="min-h-screen bg-[#f8f5fb] px-4 py-8">
       <div className="mx-auto max-w-md px-4 py-6">
 
+        {/* app name, title, and welcome message */}
         <p className="font-semibold text-nyu-violet">Bet on Your Friends</p>
 
         <h1 className="mt-6 text-3xl font-bold text-nyu-violet">
@@ -63,6 +68,7 @@ function Login() {
           Welcome back! Your groups are waiting.
         </p>
 
+        {/* email and password log in */}
         <form onSubmit={handleSubmit} className="mt-6 space-y-5">
 
           <label className="block font-medium">
@@ -80,6 +86,7 @@ function Login() {
               }}
             />
 
+            {/* show email error once typing begins */}
             {email && !emailValid && (
               <span className="mt-1 block text-sm text-red-600" role="alert">
                 Please enter a valid email address.
@@ -118,6 +125,7 @@ function Login() {
           </button>
         </form>
 
+        {/* signup link for new users */}
         <p className="mt-6 text-center text-sm">
           Don't have an account?{' '}
           <Link to="/signup" className="font-semibold text-nyu-violet">
@@ -125,6 +133,7 @@ function Login() {
           </Link>
         </p>
 
+        {/* link back to home */}
         <p className="mt-6 text-center text-sm">
           <Link to="/" className="font-semibold text-nyu-violet">
             Back to Home

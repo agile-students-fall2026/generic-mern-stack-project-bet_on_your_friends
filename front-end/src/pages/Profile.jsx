@@ -3,11 +3,18 @@ import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
-import { updateMockDisplayName } from '../services/mockProfile'
+import {
+  updateMockDisplayName,
+  updateMockProfilePhoto
+} from '../services/mockProfile'
 
 // form input stlying -> rounded boxes
-const inputStyle =
-  'mt-2 w-full rounded-lg border border-gray-300 p-3 font-normal outline-none focus:border-nyu-violet'
+// red outline -> error
+function inputStyle(hasError) {
+  return `mt-2 w-full rounded-lg border p-3 font-normal outline-none ${
+    hasError ? 'border-red-600' : 'border-gray-300 focus:border-nyu-violet'
+  }`
+}
 
 // display name length limit
 const maxDisplayNameLength = 30
@@ -16,21 +23,34 @@ function Profile() {
   const navigate = useNavigate()
   const { user, logIn, logOut } = useAuth()
 
+  // display profile name
   const [displayName, setDisplayName] = useState(getDisplayName(user))
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+
+  // change and display error for profile picture
+  const [changingPhoto, setChangingPhoto] = useState(false)
+  const [photoError, setPhotoError] = useState('')
+
+  // notification after save on the page
   const [toastMessage, setToastMessage] = useState('')
 
-  // valid name check
-  const displayNameValid = displayName.replace(/\s/g, '').length >= 3
+  // fall back to the prior photo if unchanged
+  const photoUrl =
+    user.photoUrl || `https://picsum.photos/seed/user-${user.id}/192/192`
 
-  // TODO: add functionality for the user to change their profile picture
+  // name too short or long check
+  const displayNameTooShort = displayName.replace(/\s/g, '').length < 3
+  const displayNameTooLong = displayName.length > maxDisplayNameLength
 
+  const displayNameValid = !displayNameTooShort && !displayNameTooLong
+
+  // only save if entered name is different from saved
   const changed = displayName.trim() !== getDisplayName(user)
 
   const formValid = displayNameValid && changed && !saving
 
-  // toast timeout
+  // popup notification timeout
   useEffect(() => {
     if (!toastMessage) return
 
@@ -38,7 +58,7 @@ function Profile() {
     return () => clearTimeout(timer)
   }, [toastMessage])
 
-  // run upon name new save
+  // run upon new name save
   async function handleSubmit(event) {
     event.preventDefault()
 
@@ -50,6 +70,7 @@ function Profile() {
     try {
       const updatedUser = await updateMockDisplayName(user, displayName)
 
+      // save updated user so the new name updates everywhere
       logIn(updatedUser)
       setDisplayName(getDisplayName(updatedUser))
       setToastMessage('Display name updated.')
@@ -60,7 +81,31 @@ function Profile() {
     setSaving(false)
   }
 
-  // run upon log out
+  // run upon picking a new profile picture
+  async function handlePhotoChange(event) {
+    const file = event.target.files[0]
+
+    event.target.value = ''
+
+    if (!file || changingPhoto) return
+
+    setPhotoError('')
+    setChangingPhoto(true)
+
+    try {
+      const updatedUser = await updateMockProfilePhoto(user, file)
+
+      // save updated user so new photo updates everywhere
+      logIn(updatedUser)
+      setToastMessage('Profile picture updated.')
+    } catch (error) {
+      setPhotoError(error.message)
+    }
+
+    setChangingPhoto(false)
+  }
+
+  // run upon log out of app
   function handleLogOut() {
     logOut()
     navigate('/', { replace: true })
@@ -69,17 +114,43 @@ function Profile() {
   return (
     <AppLayout title="Profile">
 
+      {/* profile picture display and change, name, and email display */}
       <section className="flex flex-col items-center text-center">
         <img
-          src={`https://picsum.photos/seed/user-${user.id}/192/192`}
+          src={photoUrl}
           alt=""
           className="h-24 w-24 rounded-full bg-nyu-lavender object-cover ring-4 ring-white shadow-sm"
         />
+
+        {/* opens photo gallery or files */}
+        <label
+          className={`mt-3 rounded text-sm font-semibold focus-within:ring-2 focus-within:ring-nyu-violet ${
+            changingPhoto
+              ? 'cursor-not-allowed text-gray-400'
+              : 'cursor-pointer text-nyu-violet hover:text-nyu-ultraviolet'
+          }`}
+        >
+          {changingPhoto ? 'Changing profile picture...' : 'Change profile picture'}
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            disabled={changingPhoto}
+            onChange={handlePhotoChange}
+          />
+        </label>
+
+        {photoError && (
+          <p className="mt-1 text-sm text-red-600" role="alert">
+            {photoError}
+          </p>
+        )}
 
         <h2 className="mt-4 text-2xl font-bold">{getDisplayName(user)}</h2>
         <p className="text-gray-500">{user.email}</p>
       </section>
 
+      {/* change display name */}
       <form
         onSubmit={handleSubmit}
         className="mt-8 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
@@ -89,23 +160,38 @@ function Profile() {
           <input
             type="text"
             autoComplete="nickname"
-            maxLength={maxDisplayNameLength}
-            className={inputStyle}
+            aria-invalid={!displayNameValid}
+            className={inputStyle(!displayNameValid)}
             value={displayName}
             onChange={(e) => {
               setDisplayName(e.target.value)
               setSaveError('')
             }}
           />
+
+          {/* character count for name input, red error when above the limit */}
+          <span
+            className={`mt-1 block text-right text-xs font-normal ${
+              displayNameTooLong ? 'text-red-600' : 'text-gray-500'
+            }`}
+          >
+            {displayName.length}/{maxDisplayNameLength}
+          </span>
         </label>
 
         <p className="mt-1 text-sm text-gray-500">
           Shown to friends in groups and on leaderboards.
         </p>
 
-        {!displayNameValid && (
+        {displayNameTooShort && (
           <p className="mt-1 text-sm text-red-600" role="alert">
             Display name must be at least 3 characters.
+          </p>
+        )}
+
+        {displayNameTooLong && (
+          <p className="mt-1 text-sm text-red-600" role="alert">
+            Display name must be {maxDisplayNameLength} characters or less.
           </p>
         )}
 

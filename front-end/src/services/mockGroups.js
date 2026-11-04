@@ -3,7 +3,6 @@ const storageKey = 'betOnYourFriendsGroups'
 
 // same seed/data every time
 const mockSeed = 2026
-
 const mockGroupCount = 8
 
 let mockGroupsRequest = null
@@ -32,6 +31,7 @@ function generateMockGroups() {
         inviteCode: faker.string.alphanumeric({ length: 6, casing: 'upper' }),
         adminIds: [memberIds[0]],
         memberIds: memberIds,
+        memberLimit: null,
         openPredictions: faker.number.int({ min: 0, max: 5 })
       }
     },
@@ -68,6 +68,25 @@ function createInviteCode(groups) {
   return inviteCode
 }
 
+// mock picsum seed for group picture
+export function getRandomMockGroupPhotoSeed() {
+  return faker.string.uuid()
+}
+
+// simulate uploading group picture chosen from user's device
+export async function uploadMockGroupPhoto(file) {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Please choose an image file.')
+  }
+
+  return getRandomMockGroupPhotoSeed()
+}
+
+// check if group has reached member limit
+export function isGroupFull(group) {
+  return group.memberLimit != null && group.memberIds.length >= group.memberLimit
+}
+
 // get every group the user is a member of
 export async function getMockGroupsForUser(userId) {
   const groups = await loadMockGroups()
@@ -78,6 +97,23 @@ export async function getMockGroupsForUser(userId) {
 export async function getMockGroupById(groupId) {
   const groups = await loadMockGroups()
   return groups.find((group) => group.id === groupId) ?? null
+}
+
+// retrieve every member of a group with a mock name
+export async function getMockGroupMembers(groupId) {
+  const group = await getMockGroupById(groupId)
+
+  if (!group) return []
+
+  return group.memberIds.map((memberId) => {
+    faker.seed([...String(memberId)].map((character) => character.charCodeAt(0)))
+
+    return {
+      id: memberId,
+      name: faker.person.fullName(),
+      isAdmin: group.adminIds.includes(memberId)
+    }
+  })
 }
 
 // get group invite code
@@ -104,7 +140,14 @@ export async function addMockMemberships(userId) {
 }
 
 // simulate creating a group
-export async function createMockGroup({ name, description, whoCanInvite, creatorId }) {
+export async function createMockGroup({
+  name,
+  description,
+  whoCanInvite,
+  memberLimit,
+  photoSeed,
+  creatorId
+}) {
   const groups = await loadMockGroups()
 
   const group = {
@@ -116,6 +159,8 @@ export async function createMockGroup({ name, description, whoCanInvite, creator
     inviteCode: createInviteCode(groups),
     adminIds: [creatorId],
     memberIds: [creatorId],
+    memberLimit: memberLimit,
+    photoSeed: photoSeed,
     openPredictions: 0
   }
 
@@ -135,9 +180,50 @@ export async function joinMockGroup(groupId, userId) {
   }
 
   if (!group.memberIds.includes(userId)) {
+    if (isGroupFull(group)) {
+      throw new Error('This group is full and cannot be joined.')
+    }
+
     group.memberIds.push(userId)
     saveMockGroups(groups)
   }
+
+  return group
+}
+
+// simulate leaving a group
+export async function leaveMockGroup(groupId, userId) {
+  const groups = await loadMockGroups()
+  const group = groups.find((group) => group.id === groupId)
+
+  if (!group || !group.memberIds.includes(userId)) {
+    throw new Error('You are not a member of this group.')
+  }
+
+  group.memberIds = group.memberIds.filter((memberId) => memberId !== userId)
+  group.adminIds = group.adminIds.filter((adminId) => adminId !== userId)
+
+  if (group.memberIds.length === 0) {
+    groups.splice(groups.indexOf(group), 1)
+  } else if (group.adminIds.length === 0) {
+    // make the next member admin if the last admin leaves
+    group.adminIds.push(group.memberIds[0])
+  }
+
+  saveMockGroups(groups)
+}
+
+// simulate existing group picture change by admin
+export async function updateMockGroupPhoto(groupId, userId, file) {
+  const groups = await loadMockGroups()
+  const group = groups.find((group) => group.id === groupId)
+
+  if (!group || !group.adminIds.includes(userId)) {
+    throw new Error('Only admins can change group picture.')
+  }
+
+  group.photoSeed = await uploadMockGroupPhoto(file)
+  saveMockGroups(groups)
 
   return group
 }
