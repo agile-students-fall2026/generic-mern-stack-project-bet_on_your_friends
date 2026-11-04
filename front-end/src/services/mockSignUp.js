@@ -51,3 +51,14 @@ export async function registerMockAccount({ name, email }) {
 
   return user
 }
+
+// Find an existing mock account using its member ID.
+export function getMockAccountById(userId) {
+  for (const account of registeredMockAccounts.values()) {
+    if (account.id === userId) {
+      return account
+    }
+  }
+
+  return null
+}

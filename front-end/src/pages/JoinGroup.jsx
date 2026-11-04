@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import { useAuth } from '../context/auth'
-import { getMockGroupByInviteCode, joinMockGroup } from '../services/mockGroups'
+import {
+  getMockGroupByInviteCode,
+  isGroupFull,
+  joinMockGroup
+} from '../services/mockGroups'
 
 function JoinGroup() {
   const { inviteCode } = useParams()
@@ -37,7 +41,11 @@ function JoinGroup() {
   // check if user already in group
   const alreadyMember = group?.memberIds.includes(user.id)
 
+  // check if group has reached member limit
+  const groupFull = group ? isGroupFull(group) : false
+
   // run upon acceptance
+  // TODO: set a limit for the number of users that can join a group: e.g. limit it to 10-20 users
   async function handleJoin() {
     setError('')
     setJoining(true)
@@ -82,7 +90,7 @@ function JoinGroup() {
 
           <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <img
-              src={`https://picsum.photos/seed/${group.id}/600/240`}
+              src={`https://picsum.photos/seed/${group.photoSeed || group.id}/600/240`}
               alt=""
               className="h-32 w-full bg-nyu-lavender object-cover"
             />
@@ -90,8 +98,11 @@ function JoinGroup() {
             <div className="p-5">
               <p className="text-2xl font-bold">{group.name}</p>
               <p className="mt-1 text-sm text-gray-500">
-                {group.memberIds.length}{' '}
-                {group.memberIds.length === 1 ? 'member' : 'members'}
+                {group.memberIds.length}
+                {group.memberLimit != null && `/${group.memberLimit}`}{' '}
+                {group.memberIds.length === 1 && group.memberLimit == null
+                  ? 'member'
+                  : 'members'}
               </p>
               <p className="mt-3 text-gray-700">
                 {group.description || 'Make predictions with your friends.'}
@@ -108,10 +119,17 @@ function JoinGroup() {
             </Link>
           ) : (
             <>
+              {/* group hit limit message */}
+              {groupFull && (
+                <p className="mt-4 text-sm text-red-600" role="alert">
+                  This group is full and cannot take any new members.
+                </p>
+              )}
+
               <button
                 type="button"
                 onClick={handleJoin}
-                disabled={joining}
+                disabled={joining || groupFull}
                 className="mt-6 w-full rounded-lg bg-nyu-violet p-3 font-semibold text-white hover:bg-nyu-ultraviolet disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 {joining ? 'Joining...' : 'Join group'}

@@ -4,12 +4,14 @@ import RequireAuth from './components/RequireAuth'
 import { useAuth } from './context/auth'
 import CreateAccount from './pages/CreateAccount'
 import CreateGroup from './pages/CreateGroup'
+import GroupMembers from './pages/GroupMembers'
 import InviteFriends from './pages/InviteFriends'
 import JoinGroup from './pages/JoinGroup'
 import Login from './pages/Login'
 import MyGroups from './pages/MyGroups'
 import Profile from './pages/Profile'
 import Predictions from './pages/Predictions'
+import Leaderboard from './pages/Leaderboard'
 
 // home page with sign up or login
 function Home() {
@@ -60,15 +62,6 @@ function MyBets() {
   )
 }
 
-// leaderboard page
-function Leaderboard() {
-  return (
-    <AppLayout title="Leaderboard">
-      <p>This page has not been implemented yet.</p>
-    </AppLayout>
-  )
-}
-
 // routes for the homepage, sign up, login, etc.
 function App() {
   return (
@@ -82,6 +75,7 @@ function App() {
         <Route path="/groups/new" element={<CreateGroup />} />
         <Route path="/groups/:groupId" element={<Predictions />} />
         <Route path="/groups/:groupId/invite" element={<InviteFriends />} />
+        <Route path="/groups/:groupId/members" element={<GroupMembers />} />
         <Route path="/join/:inviteCode" element={<JoinGroup />} />
         <Route path="/bets" element={<MyBets />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
