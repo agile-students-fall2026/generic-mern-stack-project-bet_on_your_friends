@@ -1,4 +1,5 @@
 import { faker } from '@faker-js/faker'
+import { getMockAccountById } from './mockSignUp.js'
 const storageKey = 'betOnYourFriendsGroups'
 
 // same seed/data every time
@@ -99,6 +100,15 @@ export async function getMockGroupById(groupId) {
   return groups.find((group) => group.id === groupId) ?? null
 }
 
+export async function updateMockPredictionCount(groupId, count) {
+  const groups = await loadMockGroups()
+  const group = groups.find((item) => item.id === groupId)
+  if (group) {
+    group.openPredictions = count
+    saveMockGroups(groups)
+  }
+}
+
 // retrieve every member of a group with a mock name
 export async function getMockGroupMembers(groupId) {
   const group = await getMockGroupById(groupId)
@@ -106,11 +116,17 @@ export async function getMockGroupMembers(groupId) {
   if (!group) return []
 
   return group.memberIds.map((memberId) => {
-    faker.seed([...String(memberId)].map((character) => character.charCodeAt(0)))
+    const account = getMockAccountById(memberId)
+    let name = account?.displayName || account?.name
+
+    if (!name) {
+      faker.seed([...String(memberId)].map((character) => character.charCodeAt(0)))
+      name = faker.person.fullName()
+    }
 
     return {
       id: memberId,
-      name: faker.person.fullName(),
+      name,
       isAdmin: group.adminIds.includes(memberId)
     }
   })

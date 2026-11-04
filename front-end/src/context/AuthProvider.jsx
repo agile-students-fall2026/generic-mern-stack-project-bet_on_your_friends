@@ -1,12 +1,17 @@
 import { startTransition, useState } from 'react'
 import { AuthContext } from './auth'
+import { getRegisteredMockAccount, saveMockAccount } from '../services/mockSignUp'
 
 // where the logged-in user is saved
 const storageKey = 'betOnYourFriendsUser'
 
 function loadSavedUser() {
   try {
-    return JSON.parse(sessionStorage.getItem(storageKey))
+    const savedUser = JSON.parse(sessionStorage.getItem(storageKey))
+    if (!savedUser) return null
+    const account = getRegisteredMockAccount(savedUser.email) || savedUser
+    saveMockAccount(account)
+    return account
   } catch {
     return null
   }
@@ -17,6 +22,7 @@ function AuthProvider({ children }) {
 
   // log in with saved user
   function logIn(newUser) {
+    saveMockAccount(newUser)
     sessionStorage.setItem(storageKey, JSON.stringify(newUser))
     setUser(newUser)
   }

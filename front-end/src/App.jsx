@@ -10,6 +10,7 @@ import JoinGroup from './pages/JoinGroup'
 import Login from './pages/Login'
 import MyGroups from './pages/MyGroups'
 import Profile from './pages/Profile'
+import Predictions from './pages/Predictions'
 import Leaderboard from './pages/Leaderboard'
 
 // home page with sign up or login
@@ -52,21 +53,6 @@ function Home() {
   )
 }
 
-// group predictions page
-function GroupPredictions() {
-  return (
-    <AppLayout title="Group" back="/groups">
-      <p>This page has not been implemented yet.</p>
-      <Link to="invite" className="block font-semibold text-nyu-violet">
-        Invite friends
-      </Link>
-      <Link to="members" className="mt-2 block font-semibold text-nyu-violet">
-        Group members
-      </Link>
-    </AppLayout>
-  )
-}
-
 // my bets page
 function MyBets() {
   return (
@@ -87,7 +73,7 @@ function App() {
       <Route element={<RequireAuth />}>
         <Route path="/groups" element={<MyGroups />} />
         <Route path="/groups/new" element={<CreateGroup />} />
-        <Route path="/groups/:groupId" element={<GroupPredictions />} />
+        <Route path="/groups/:groupId" element={<Predictions />} />
         <Route path="/groups/:groupId/invite" element={<InviteFriends />} />
         <Route path="/groups/:groupId/members" element={<GroupMembers />} />
         <Route path="/join/:inviteCode" element={<JoinGroup />} />
