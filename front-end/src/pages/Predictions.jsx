@@ -5,6 +5,7 @@ import { getDisplayName, useAuth } from '../context/auth'
 import PredictionCard from '../components/PredictionCard'
 import ConfirmModal from '../components/ConfirmModal'
 import PredictionForm from '../components/PredictionForm'
+import FilterButtons from '../components/FilterButtons'
 import PredictionComments from '../components/PredictionComments'
 import { getMockPredictionData, createMockPrediction, editMockPrediction, deleteMockPrediction, placeMockBet, resolveMockPrediction,} from '../services/mockPredictions'
 
@@ -18,6 +19,7 @@ function Predictions() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [selectedId, setSelectedId] = useState(null)
+  const [filter, setFilter] = useState('All predictions')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [dialog, setDialog] = useState(null)
@@ -125,6 +127,20 @@ function Predictions() {
   const bettingClosed = selected && selected.bettingClosed
   const coinsToBet = selected?.stake ?? Number(betAmount)
   const canBet = Number.isSafeInteger(coinsToBet) && coinsToBet > 0 && coinsToBet <= user.coinBalance
+
+// filter the list without changing the saved predictions
+const filteredPredictions = data.predictions.filter((prediction) => {
+  if (filter === 'Resolved') {
+    return Boolean(prediction.result)
+  }
+
+  if (filter === 'Open') {
+    return !prediction.result && new Date(prediction.deadline) > new Date()
+  }
+
+  return true
+})
+
   let confirmText = 'Confirm'
   if (dialog?.type === 'bet') confirmText = 'Done'
   if (dialog?.type === 'placeBet') confirmText = 'Place bet'
@@ -233,9 +249,22 @@ function Predictions() {
           </section>
         ) : (
           <section className="mt-6 space-y-4">
-            <button onClick={() => { setEditing(null); setShowForm(true); setError(''); setMessage('') }} className={buttonStyle}>New prediction</button>
-            {data.predictions.length === 0 && <p>No predictions yet.</p>}
-            {data.predictions.map((prediction) => (
+             <FilterButtons
+              options={['All predictions', 'Resolved', 'Open']}
+              value={filter}
+              onChange={setFilter}
+              label="Filter predictions"
+            />
+
+            <button onClick={() => { setEditing(null); setShowForm(true); setError(''); setMessage('') }} className={buttonStyle}>
+              New prediction
+            </button>
+
+            {filteredPredictions.length === 0 && (
+              <p>No predictions in this tab yet.</p>
+            )}
+
+            {filteredPredictions.map((prediction) => (
               <PredictionCard
                 key={prediction.id}
                 prediction={prediction}
