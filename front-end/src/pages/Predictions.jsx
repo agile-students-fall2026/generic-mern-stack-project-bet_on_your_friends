@@ -5,14 +5,8 @@ import { getDisplayName, useAuth } from '../context/auth'
 import PredictionCard from '../components/PredictionCard'
 import ConfirmModal from '../components/ConfirmModal'
 import PredictionForm from '../components/PredictionForm'
-import {
-  getMockPredictionData,
-  createMockPrediction,
-  editMockPrediction,
-  deleteMockPrediction,
-  placeMockBet,
-  resolveMockPrediction,
-} from '../services/mockPredictions'
+import PredictionComments from '../components/PredictionComments'
+import { getMockPredictionData, createMockPrediction, editMockPrediction, deleteMockPrediction, placeMockBet, resolveMockPrediction,} from '../services/mockPredictions'
 
 const buttonStyle = 'rounded-lg bg-nyu-violet p-3 font-semibold text-white disabled:bg-gray-300'
 const inputStyle = 'mt-2 w-full rounded-lg border border-gray-300 p-3'
@@ -225,6 +219,17 @@ function Predictions() {
                 <button disabled={!betOutcome || !canBet} className={buttonStyle}>Place bet</button>
               </form>
             )}
+            {/* Show comments below the prediction, including after it is resolved. */}
+            {/* A different key gives each prediction its own fresh comment form. */}
+            <PredictionComments
+              key={selected.id}
+              data={data}
+              prediction={selected}
+              onUpdate={() => {
+                // Saved the comment. Update state so it appears on screen.
+                setData({ ...data })
+              }}
+            />
           </section>
         ) : (
           <section className="mt-6 space-y-4">
