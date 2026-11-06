@@ -6,6 +6,9 @@ const storageKey = 'betOnYourFriendsPredictions'
 const groupPredictions = JSON.parse(sessionStorage.getItem(storageKey) || '{}')
 export const maxOutcomes = 5
 export const maxOutcomeLength = 250
+// Same limits in the comment form and when saving a comment.
+export const minCommentLength = 1
+export const maxCommentLength = 500
 
 export async function getMockPredictionData(groupId, user) {
   const group = await getMockGroupById(groupId)
@@ -36,6 +39,12 @@ export async function getMockPredictionData(groupId, user) {
   }
   const data = { group, users: getMockAccounts(), currentUserId: account.id, predictions: groupPredictions[groupId] }
   for (const prediction of data.predictions) {
+    // Older saved predictions might not have comments yet.
+    // Only add an empty list if one does not already exist.
+    if (!prediction.comments) {
+      prediction.comments = []
+    }
+
     prediction.bettingClosed = new Date(prediction.deadline) <= new Date()
   }
   await savePredictionData(data)
@@ -93,6 +102,10 @@ function checkEditable(data, prediction) {
 export async function createMockPrediction(data, values) {
   const fields = checkForm(values)
   const prediction = { id: crypto.randomUUID(), creatorId: data.currentUserId, ...fields, bets: [], result: null }
+
+  // New prediction starts with no comments.
+  prediction.comments = []
+
   data.predictions.push(prediction)
   await savePredictionData(data)
   return prediction
@@ -166,5 +179,43 @@ export async function resolveMockPrediction(data, id, outcome) {
     })
   }
   prediction.result = outcome
+  await savePredictionData(data)
+}
+
+// Called when someone presses Send comment.
+export async function addMockComment(data, predictionId, text) {
+  // Check that the person still belongs to this group.
+  const group = await getMockGroupById(data.group.id)
+
+  if (!group || !group.memberIds.includes(data.currentUserId)) {
+    throw new Error('You must belong to this group to comment.')
+  }
+
+  // Spaces by themselves should not count as a comment.
+  if (text.trim().length < minCommentLength) {
+    throw new Error('Write at least one character before sending.')
+  }
+
+  // Check the length here too, so an overlong comment cannot be saved.
+  if (text.length > maxCommentLength) {
+    throw new Error('Keep your comment within 500 characters.')
+  }
+
+  // Find the prediction the person is commenting on.
+  const prediction = findPrediction(data, predictionId)
+
+  if (!prediction.comments) {
+    prediction.comments = []
+  }
+
+  // Save who posted it, what they wrote, and when they posted it.
+  prediction.comments.push({
+    id: crypto.randomUUID(),
+    userId: data.currentUserId,
+    text: text.trim(),
+    createdAt: new Date().toISOString()
+  })
+
+  // Reuse the existing save function so comments stay after refreshing.
   await savePredictionData(data)
 }
