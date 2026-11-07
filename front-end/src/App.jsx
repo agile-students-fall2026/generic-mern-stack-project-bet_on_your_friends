@@ -1,5 +1,4 @@
 import { Link, Navigate, Routes, Route } from 'react-router-dom'
-import AppLayout from './components/AppLayout'
 import RequireAuth from './components/RequireAuth'
 import { useAuth } from './context/auth'
 import CreateAccount from './pages/CreateAccount'
@@ -12,6 +11,7 @@ import MyGroups from './pages/MyGroups'
 import Profile from './pages/Profile'
 import Predictions from './pages/Predictions'
 import Leaderboard from './pages/Leaderboard'
+import MyBets from './pages/MyBets'
 
 // home page with sign up or login
 function Home() {
@@ -50,15 +50,6 @@ function Home() {
         </nav>
       </div>
     </main>
-  )
-}
-
-// my bets page
-function MyBets() {
-  return (
-    <AppLayout title="My Bets">
-      <p>This page has not been implemented yet.</p>
-    </AppLayout>
   )
 }
 

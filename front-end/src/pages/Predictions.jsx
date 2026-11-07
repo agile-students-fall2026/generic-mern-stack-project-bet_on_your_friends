@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import { getDisplayName, useAuth } from '../context/auth'
 import PredictionCard from '../components/PredictionCard'
@@ -7,25 +7,40 @@ import ConfirmModal from '../components/ConfirmModal'
 import PredictionForm from '../components/PredictionForm'
 import FilterButtons from '../components/FilterButtons'
 import PredictionComments from '../components/PredictionComments'
+import PredictionBettors from '../components/PredictionBettors'
 import { getMockPredictionData, createMockPrediction, editMockPrediction, deleteMockPrediction, placeMockBet, resolveMockPrediction,} from '../services/mockPredictions'
+import BetResult from '../components/BetResult'
 
 const buttonStyle = 'rounded-lg bg-nyu-violet p-3 font-semibold text-white disabled:bg-gray-300'
 const inputStyle = 'mt-2 w-full rounded-lg border border-gray-300 p-3'
 
 function Predictions() {
   const { groupId } = useParams()
+  const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
   const { user: account, logIn } = useAuth()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [selectedId, setSelectedId] = useState(null)
   const [filter, setFilter] = useState('All predictions')
+  const [showBettors, setShowBettors] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [dialog, setDialog] = useState(null)
   const [betOutcome, setBetOutcome] = useState('')
   const [betAmount, setBetAmount] = useState('')
   const [winningOutcome, setWinningOutcome] = useState('')
+  const selectedId = params.get('prediction')
+  const fromMyBets = params.get('from') === 'bets'
+
+  function setSelectedId(id) {
+  if (!id) {
+    setParams({})
+  } else if (fromMyBets) {
+    setParams({ prediction: id, from: 'bets' })
+  } else {
+    setParams({ prediction: id })
+  } }
 
   async function loadData() {
     const result = await getMockPredictionData(groupId, account)
@@ -42,6 +57,7 @@ function Predictions() {
   }, [groupId, account])
 
   function openPrediction(id) {
+    setShowBettors(false)
     loadData().catch((problem) => setError(problem.message))
     setSelectedId(id)
     setError('')
@@ -113,7 +129,7 @@ function Predictions() {
 
   if (!data) {
     return (
-      <AppLayout title="Predictions" back="/groups">
+      <AppLayout title="Predictions" back={fromMyBets ? '/bets' : '/groups'}>
         <p role="status">{error || 'Loading predictions...'}</p>
       </AppLayout>
     )
@@ -154,7 +170,7 @@ const filteredPredictions = data.predictions.filter((prediction) => {
   }
 
   return (
-    <AppLayout title={data.group.name} back="/groups">
+    <AppLayout title={data.group.name} back={fromMyBets ? '/bets' : '/groups'}>
         <Link to="invite" className="block font-semibold text-nyu-violet">
           Invite friends
         </Link>
@@ -172,9 +188,23 @@ const filteredPredictions = data.predictions.filter((prediction) => {
             onSave={savePrediction}
             onCancel={() => { setShowForm(false); setEditing(null); setError('') }}
           />
+          ) : selected && showBettors ? (
+          <PredictionBettors
+            key={selected.id}
+            data={data}
+            prediction={selected}
+            onBack={() => setShowBettors(false)}
+          />
         ) : selected ? (
           <section className="mt-6 space-y-5">
-            <button onClick={() => { setSelectedId(null); setError(''); setMessage('') }} className="text-nyu-violet">Back to predictions</button>
+          
+          <button type="button" onClick={() => {
+             if (fromMyBets) {
+              navigate('/bets')
+              return
+            } 
+            setSelectedId(null); setError(''); setMessage('') }} className="text-nyu-violet" > {fromMyBets ? 'Back to My Bets' : 'Back to predictions'} </button>
+            
             <h2 className="text-xl font-bold">{selected.question}</h2>
             <p>By {getDisplayName(creator)}</p>
             <p>Closes {new Date(selected.deadline).toLocaleString()}</p>
@@ -191,6 +221,9 @@ const filteredPredictions = data.predictions.filter((prediction) => {
             {selected.result ? (
               <div className="rounded-lg bg-white p-4">
                 <h3 className="font-bold">Final outcome: {selected.result}</h3>
+                <div className="mt-2">
+                  <BetResult prediction={selected} userId={data.currentUserId} />
+                </div>
                 <p className="mt-2">This prediction has been resolved and cannot be changed.</p>
                 {selected.refunded && <p className="mt-2">No one bet on this outcome, so all bets were refunded.</p>}
               </div>
@@ -235,6 +268,14 @@ const filteredPredictions = data.predictions.filter((prediction) => {
                 <button disabled={!betOutcome || !canBet} className={buttonStyle}>Place bet</button>
               </form>
             )}
+              <button
+              type="button"
+              onClick={() => setShowBettors(true)}
+              className={buttonStyle}
+            >
+              View bettors
+            </button>
+            
             {/* Show comments below the prediction, including after it is resolved. */}
             {/* A different key gives each prediction its own fresh comment form. */}
             <PredictionComments
@@ -268,6 +309,7 @@ const filteredPredictions = data.predictions.filter((prediction) => {
               <PredictionCard
                 key={prediction.id}
                 prediction={prediction}
+                currentUserId={data.currentUserId}
                 creator={data.users.find((person) => person.id === prediction.creatorId)}
                 onOpen={() => openPrediction(prediction.id)}
               />
