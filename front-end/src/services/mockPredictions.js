@@ -1,11 +1,14 @@
 import { fakerEN as faker } from '@faker-js/faker'
 import { getMockAccounts, getRegisteredMockAccount, saveMockAccount } from './mockSignUp.js'
-import { getMockGroupById, updateMockPredictionCount } from './mockGroups.js'
+import { getMockGroupById,getMockGroupsForUser,updateMockPredictionCount } from './mockGroups.js'
 
 const storageKey = 'betOnYourFriendsPredictions'
 const groupPredictions = JSON.parse(sessionStorage.getItem(storageKey) || '{}')
 export const maxOutcomes = 5
 export const maxOutcomeLength = 250
+// Same limits in the comment form and when saving a comment.
+export const minCommentLength = 1
+export const maxCommentLength = 500
 
 export async function getMockPredictionData(groupId, user) {
   const group = await getMockGroupById(groupId)
@@ -36,6 +39,11 @@ export async function getMockPredictionData(groupId, user) {
   }
   const data = { group, users: getMockAccounts(), currentUserId: account.id, predictions: groupPredictions[groupId] }
   for (const prediction of data.predictions) {
+    // Older saved predictions might not have comments yet.
+    // Only add an empty list if one does not already exist.
+        if (!prediction.comments) {
+          prediction.comments = []
+        }
     prediction.bettingClosed = new Date(prediction.deadline) <= new Date()
   }
   await savePredictionData(data)
@@ -93,6 +101,10 @@ function checkEditable(data, prediction) {
 export async function createMockPrediction(data, values) {
   const fields = checkForm(values)
   const prediction = { id: crypto.randomUUID(), creatorId: data.currentUserId, ...fields, bets: [], result: null }
+
+  // New prediction starts with no comments.
+  prediction.comments = []
+
   data.predictions.push(prediction)
   await savePredictionData(data)
   return prediction
@@ -129,7 +141,7 @@ export async function placeMockBet(data, id, outcome, amount) {
   }
   if (coins > user.coinBalance) throw new Error('You do not have enough coins.')
   user.coinBalance -= coins
-  prediction.bets.push({ userId: user.id, outcome, amount: coins })
+  prediction.bets.push({userId: user.id,outcome,amount: coins,placedAt: new Date().toISOString()})
   saveMockAccount(user)
   await savePredictionData(data)
 }
@@ -149,7 +161,10 @@ export async function resolveMockPrediction(data, id, outcome) {
   if (winningPool === 0) {
     for (const bet of prediction.bets) {
       const user = getMockAccounts().find((item) => item.id === bet.userId)
-      user.coinBalance += bet.amount
+            user.coinBalance += bet.amount
+
+      // a refund gives the original stake back
+      bet.payout = bet.amount
       saveMockAccount(user)
     }
     prediction.refunded = pool > 0
@@ -161,10 +176,160 @@ export async function resolveMockPrediction(data, id, outcome) {
       if (index === winners.length - 1) payout = remaining
       const user = getMockAccounts().find((item) => item.id === bet.userId)
       user.coinBalance += payout
+      bet.payout = payout
       saveMockAccount(user)
       remaining -= payout
     })
   }
+    for (const bet of prediction.bets) {
+    if (bet.payout === undefined) {
+      bet.payout = 0
+    }
+  }
+
   prediction.result = outcome
   await savePredictionData(data)
+}
+
+// Called when someone presses Send comment.
+export async function addMockComment(data, predictionId, text) {
+  // Check that the person still belongs to this group.
+  const group = await getMockGroupById(data.group.id)
+
+  if (!group || !group.memberIds.includes(data.currentUserId)) {
+    throw new Error('You must belong to this group to comment.')
+  }
+
+  // Spaces by themselves should not count as a comment.
+  if (text.trim().length < minCommentLength) {
+    throw new Error('Write at least one character before sending.')
+  }
+
+  // Check the length here too, so an overlong comment cannot be saved.
+  if (text.length > maxCommentLength) {
+    throw new Error('Keep your comment within 500 characters.')
+  }
+
+  // Find the prediction the person is commenting on.
+  const prediction = findPrediction(data, predictionId)
+
+  if (!prediction.comments) {
+    prediction.comments = []
+  }
+
+  // Save who posted it, what they wrote, and when they posted it.
+  prediction.comments.push({
+    id: crypto.randomUUID(),
+    userId: data.currentUserId,
+    text: text.trim(),
+    createdAt: new Date().toISOString()
+  })
+
+  // Reuse the existing save function so comments stay after refreshing.
+  await savePredictionData(data)
+}
+
+// get this user's result for one prediction
+export function getBetResult(prediction, userId) {
+  const bet = prediction.bets.find((item) => item.userId === userId)
+
+  if (!bet) {
+    return { label: 'No bet', net: null }
+  }
+
+  if (!prediction.result) {
+    return { label: 'Pending', net: null }
+  }
+
+  let payout = bet.payout
+
+  // older bets don't have a saved payout, so use the original payout rules
+  if (payout === undefined) {
+    const winners = prediction.bets.filter(
+      (item) => item.outcome === prediction.result
+    )
+
+    let pool = 0
+    let winningPool = 0
+
+    for (const item of prediction.bets) {
+      pool += item.amount
+    }
+
+    for (const winner of winners) {
+      winningPool += winner.amount
+    }
+
+    payout = 0
+
+    if (winningPool === 0) {
+      // no winning bets means everyone gets their stake back
+      payout = bet.amount
+    } else {
+      let remaining = pool
+
+      for (let index = 0; index < winners.length; index++) {
+        const winner = winners[index]
+        let share = Math.floor(pool * winner.amount / winningPool)
+
+        // same rounding rule as the existing resolve function
+        if (index === winners.length - 1) {
+          share = remaining
+        }
+
+        if (winner.userId === userId) {
+          payout = share
+        }
+
+        remaining -= share
+      }
+    }
+  }
+
+  let label = 'Lost'
+
+  if (prediction.refunded) {
+    label = 'Refunded'
+  } else if (bet.outcome === prediction.result) {
+    label = 'Won'
+  }
+ // subtract the stake to show the actual gain or loss
+  return { label, payout, net: payout - bet.amount }
+}
+
+// collect the signed-in user's bets across groups
+export async function getMockMyBets(user) {
+  const groups = await getMockGroupsForUser(user.id)
+
+  // load the predictions for each group the user belongs to
+  for (const group of groups) {
+    await getMockPredictionData(group.id, user)
+  }
+
+  const rows = []
+
+  // also check saved groups the user has left, so old bets stay in their history
+  const groupIds = Object.keys(groupPredictions)
+
+  for (const groupId of groupIds) {
+    const group = await getMockGroupById(groupId)
+    const predictions = groupPredictions[groupId]
+
+    for (const prediction of predictions) {
+      const bet = prediction.bets.find(
+        (item) => item.userId === user.id
+      )
+
+      if (bet) { rows.push({ groupId, group, prediction, bet })}
+    }
+  }
+// newest bets first and older bets without dates go at the bottom
+  rows.sort((first, second) => {
+    const firstDate = new Date(first.bet.placedAt || 0).getTime()
+    const secondDate = new Date(second.bet.placedAt || 0).getTime()
+
+    return secondDate - firstDate
+  })
+
+  return rows
 }
