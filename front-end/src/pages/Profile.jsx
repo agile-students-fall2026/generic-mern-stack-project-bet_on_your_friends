@@ -20,6 +20,17 @@ function inputStyle(hasError) {
 // display name length limit
 const maxDisplayNameLength = 30
 
+// password requirements: 8-64 characters, uppercase, lowercase, and a number
+function isValidPassword(password) {
+  return (
+    password.length >= 8 &&
+    password.length <= 64 &&
+    /[A-Z]/.test(password) &&
+    /[a-z]/.test(password) &&
+    /[0-9]/.test(password)
+  )
+}
+
 function Profile() {
   const navigate = useNavigate()
   const { user, logIn, logOut } = useAuth()
@@ -32,6 +43,13 @@ function Profile() {
   // change and display error for profile picture
   const [changingPhoto, setChangingPhoto] = useState(false)
   const [photoError, setPhotoError] = useState('')
+
+  // change password form
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
 
   // notification after save on the page
   const [toastMessage, setToastMessage] = useState('')
@@ -50,6 +68,18 @@ function Profile() {
   const changed = displayName.trim() !== getDisplayName(user)
 
   const formValid = displayNameValid && changed && !saving
+
+  // check new password rules and that both fields match
+  const newPasswordValid = isValidPassword(newPassword)
+  const passwordsMatch =
+    confirmPassword !== '' && newPassword === confirmPassword
+
+  // allow submitting once every password field is valid
+  const passwordFormValid =
+    currentPassword !== '' &&
+    newPasswordValid &&
+    passwordsMatch &&
+    !changingPassword
 
   // popup notification timeout
   useEffect(() => {
@@ -106,6 +136,34 @@ function Profile() {
     setChangingPhoto(false)
   }
 
+  // run upon changing password
+  async function handlePasswordSubmit(event) {
+    event.preventDefault()
+
+    if (!passwordFormValid) return
+
+    setPasswordError('')
+    setChangingPassword(true)
+
+    try {
+      // the back-end checks the current password and saves the new one
+      await apiRequest(`/api/users/${user.id}/password`, {
+        method: 'PATCH',
+        body: { currentPassword, newPassword, confirmPassword }
+      })
+
+      // clear the form so passwords aren't left on the screen
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setToastMessage('Password updated.')
+    } catch (error) {
+      setPasswordError(error.message)
+    }
+
+    setChangingPassword(false)
+  }
+
   // run upon log out of app
   async function handleLogOut() {
     try {
@@ -115,7 +173,7 @@ function Profile() {
       // still log out even if the server can't be reached
     }
 
-    // forget saved user and go back to the home page
+    // forget the saved user and go back to the home page
     logOut()
     navigate('/', { replace: true })
   }
@@ -216,6 +274,92 @@ function Profile() {
           className="mt-4 w-full rounded-lg bg-nyu-violet p-3 font-semibold text-white hover:bg-nyu-ultraviolet disabled:cursor-not-allowed disabled:bg-gray-300"
         >
           {saving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </form>
+
+      {/* change password */}
+      <form
+        onSubmit={handlePasswordSubmit}
+        className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+      >
+        <h2 className="text-lg font-bold">Change password</h2>
+
+        <label className="mt-4 block font-medium">
+          Current password
+          <input
+            type="password"
+            autoComplete="current-password"
+            className={inputStyle(false)}
+            value={currentPassword}
+            onChange={(e) => {
+              setCurrentPassword(e.target.value)
+              setPasswordError('')
+            }}
+          />
+        </label>
+
+        <label className="mt-4 block font-medium">
+          New password
+          <input
+            type="password"
+            autoComplete="new-password"
+            aria-invalid={newPassword !== '' && !newPasswordValid}
+            className={inputStyle(newPassword !== '' && !newPasswordValid)}
+            value={newPassword}
+            onChange={(e) => {
+              setNewPassword(e.target.value)
+              setPasswordError('')
+            }}
+          />
+
+          {/* same password rules as Create Account */}
+          <span className="mt-1 block text-xs font-normal text-gray-500">
+            Between 8-64 characters, one uppercase, one lowercase, and one number.
+          </span>
+        </label>
+
+        {/* show error if the new password is invalid */}
+        {newPassword && !newPasswordValid && (
+          <p className="mt-1 text-sm text-red-600" role="alert">
+            Password does not meet the requirements.
+          </p>
+        )}
+
+        <label className="mt-4 block font-medium">
+          Confirm new password
+          <input
+            type="password"
+            autoComplete="new-password"
+            aria-invalid={confirmPassword !== '' && !passwordsMatch}
+            className={inputStyle(confirmPassword !== '' && !passwordsMatch)}
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value)
+              setPasswordError('')
+            }}
+          />
+        </label>
+
+        {/* error if new passwords don't match */}
+        {confirmPassword && !passwordsMatch && (
+          <p className="mt-1 text-sm text-red-600" role="alert">
+            Passwords do not match.
+          </p>
+        )}
+
+        {/* backend errors */}
+        {passwordError && (
+          <p className="mt-1 text-sm text-red-600" role="alert">
+            {passwordError}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={!passwordFormValid}
+          className="mt-4 w-full rounded-lg bg-nyu-violet p-3 font-semibold text-white hover:bg-nyu-ultraviolet disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          {changingPassword ? 'Changing password...' : 'Change Password'}
         </button>
       </form>
 
