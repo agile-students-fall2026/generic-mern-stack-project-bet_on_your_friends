@@ -206,3 +206,29 @@ describe('GET /api/users/:userId/groups', () => {
     expect(res.body.error).to.equal('This account does not exist.')
   })
 })
+
+describe('GET /api/users/:userId/groups', () => {
+  // start every test with the same mock data
+  beforeEach(() => {
+    resetData()
+  })
+
+  it('sends back every group the user is a member of', async () => {
+    const res = await request.execute(app).get('/api/users/u1/groups')
+
+    expect(res).to.have.status(200)
+    expect(res.body.map((group) => group.id)).to.deep.equal(['g1', 'g2'])
+    expect(res.body[0]).to.include({
+      name: 'Roommate Rivals',
+      photoSeed: 'roommate-rivals',
+      openPredictions: 3
+    })
+  })
+
+  it('returns a 404 error when the user does not exist', async () => {
+    const res = await request.execute(app).get('/api/users/not-a-user/groups')
+
+    expect(res).to.have.status(404)
+    expect(res.body.error).to.equal('This account does not exist.')
+  })
+})
