@@ -132,7 +132,7 @@ Example Pull Request:
 
 ## Building and Testing
 
-From the root of the repository, run:
+For the front-end, run:
 
 ```
 cd front-end
@@ -140,8 +140,15 @@ npm install
 npm run dev
 ```
 
-This will open up localhost. On localhost, you should manually test any pages or features that were changed to make sure everything works as expected.
+For the back-end, run:
 
+```
+cd back-end
+npm install
+npm run dev
+```
+
+This will open up localhost. On localhost, you should manually test any pages or features that were changed to make sure everything works as expected.
 
 You can also test changes before creating a PR:
 
