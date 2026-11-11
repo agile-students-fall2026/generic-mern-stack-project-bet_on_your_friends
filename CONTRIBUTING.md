@@ -140,6 +140,8 @@ npm install
 npm run dev
 ```
 
+This will open up localhost:5173. On localhost, you should manually test any pages or features that were changed to make sure everything works as expected.
+
 For the back-end, run:
 
 ```
@@ -148,7 +150,7 @@ npm install
 npm run dev
 ```
 
-This will open up localhost. On localhost, you should manually test any pages or features that were changed to make sure everything works as expected.
+This will open up localhost:3000. More testing details TBD.
 
 You can also test changes before creating a PR:
 
