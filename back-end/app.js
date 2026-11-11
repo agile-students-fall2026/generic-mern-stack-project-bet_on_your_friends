@@ -4,6 +4,7 @@ const app = express() // instantiate an Express object
 
 // routers that hold each group of api routes
 const authRouter = require('./routes/auth')
+const groupsRouter = require('./routes/groups')
 
 // decode JSON-formatted incoming POST data so routes can read req.body
 app.use(express.json())
@@ -15,6 +16,9 @@ app.get('/', (req, res) => {
 
 // log in and log out routes -> /api/auth/login and /api/auth/logout
 app.use('/api/auth', authRouter)
+
+// group routes -> /api/groups/:groupId and /api/groups/:groupId/members
+app.use('/api/groups', groupsRouter)
 
 // export the express app we created to make it available to other modules
 module.exports = app

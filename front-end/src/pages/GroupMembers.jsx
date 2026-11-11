@@ -3,9 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
+import { apiRequest } from '../services/api'
 import {
-  getMockGroupById,
-  getMockGroupMembers,
   isGroupFull,
   leaveMockGroup,
   updateMockGroupPhoto
@@ -37,11 +36,14 @@ function GroupMembers() {
   const [leaving, setLeaving] = useState(false)
   const [leaveError, setLeaveError] = useState('')
 
-  // load group and its members
+  // load group and its members from the back-end simultaneously
   useEffect(() => {
     let buffer = false
 
-    Promise.all([getMockGroupById(groupId), getMockGroupMembers(groupId)])
+    Promise.all([
+      apiRequest(`/api/groups/${groupId}`),
+      apiRequest(`/api/groups/${groupId}/members`)
+    ])
       .then(([foundGroup, groupMembers]) => {
         if (buffer) return
 
@@ -49,6 +51,7 @@ function GroupMembers() {
         setMembers(groupMembers)
       })
       .catch((error) => {
+        // back-end's 404 error when group doesn't exist
         if (!buffer) setLoadError(error.message)
       })
       .finally(() => {
