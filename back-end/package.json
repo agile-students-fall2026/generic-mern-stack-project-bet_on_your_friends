@@ -1,0 +1,30 @@
+{
+  "name": "back-end",
+  "version": "1.0.0",
+  "description": "A web app where friends make predictions about things happening in each other's lives using fake money.",
+  "main": "server.js",
+  "scripts": {
+    "test": "mocha",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "coverage": "c8 npm test"
+  },
+  "keywords": [],
+  "author": "Alisha, Sufyan, Vihaan, and Nihal",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.21.1",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "morgan": "^1.12.1",
+    "multer": "^2.5.0",
+    "pug": "^3.0.4"
+  },
+  "devDependencies": {
+    "c8": "^9.1.0",
+    "chai": "^6.3.0",
+    "chai-http": "^5.2.1",
+    "mocha": "^11.1.0",
+    "nodemon": "^3.1.11"
+  }
+}
