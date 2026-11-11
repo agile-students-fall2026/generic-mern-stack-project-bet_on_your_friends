@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
+import { apiRequest } from '../services/api'
 import {
   updateMockDisplayName,
   updateMockProfilePhoto
@@ -106,7 +107,15 @@ function Profile() {
   }
 
   // run upon log out of app
-  function handleLogOut() {
+  async function handleLogOut() {
+    try {
+      // inform back-end that user is logging out
+      await apiRequest('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // still log out even if the server can't be reached
+    }
+
+    // forget saved user and go back to the home page
     logOut()
     navigate('/', { replace: true })
   }
