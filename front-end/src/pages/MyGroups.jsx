@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
-import { getMockGroupsForUser } from '../services/mockGroups'
+import { apiRequest } from '../services/api'
 
 // form input stlying -> rounded boxes
 const inputStyle =
@@ -49,15 +49,16 @@ function MyGroups() {
     }
   }, [location, navigate])
 
-  // load user groups
+  // load user groups from the back-end
   useEffect(() => {
     let buffer = false
 
-    getMockGroupsForUser(user.id)
+    apiRequest(`/api/users/${user.id}/groups`)
       .then((userGroups) => {
         if (!buffer) setGroups(userGroups)
       })
       .catch((error) => {
+        // back-end's 404 error when account doesn't exist
         if (!buffer) setLoadError(error.message)
       })
       .finally(() => {

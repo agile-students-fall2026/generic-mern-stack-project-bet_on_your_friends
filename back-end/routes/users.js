@@ -1,4 +1,4 @@
-// routes for /api/users -> changing a user's account settings
+// routes for /api/users -> a user's account settings and groups
 const express = require('express')
 const { db } = require('../data')
 
@@ -61,6 +61,20 @@ router.patch('/:userId/password', (req, res) => {
   user.password = newPassword
 
   res.json({ message: 'Password updated.' })
+})
+
+// my groups -> GET /api/users/:userId/groups
+router.get('/:userId/groups', (req, res) => {
+  const user = db.users.find((account) => account.id === req.params.userId)
+
+  // no account with this id
+  if (!user) {
+    return res.status(404).json({ error: 'This account does not exist.' })
+  }
+
+  const userGroups = db.groups.filter((group) => group.memberIds.includes(user.id))
+
+  res.json(userGroups)
 })
 
 module.exports = router
