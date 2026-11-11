@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/auth'
-import { logInMockAccount } from '../services/mockLogIn'
+import { apiRequest } from '../services/api'
 
 // form input stlying -> rounded boxes
 const inputStyle =
@@ -39,7 +39,11 @@ function Login() {
     setSubmitting(true)
 
     try {
-      const loggedInUser = await logInMockAccount({ email, password })
+      // check the email and password with the back-end
+      const loggedInUser = await apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: { email, password }
+      })
       logIn(loggedInUser)
       navigate(redirectTo, { replace: true })
     } catch (error) {
