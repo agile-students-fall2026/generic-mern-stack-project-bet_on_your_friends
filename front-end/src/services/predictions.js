@@ -28,7 +28,7 @@ export function createPrediction(data, values) {
 
 export function editPrediction(data, id, values) {
   return apiRequest(`/api/predictions/${id}`, {
-    method: 'PATCH', body: predictionBody(data, values)
+    method: 'POST', body: predictionBody(data, values)
   })
 }
 

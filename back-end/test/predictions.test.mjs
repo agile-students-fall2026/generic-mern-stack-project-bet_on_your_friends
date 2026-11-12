@@ -6,6 +6,7 @@ import data from '../data/index.js'
 use(chaiHttp)
 
 const { db, resetData } = data
+let requester
 
 function validPrediction() {
   return {
@@ -18,18 +19,24 @@ function validPrediction() {
 }
 
 function bet(userId = 'u1', outcome = 'Yes', amount = 25) {
-  return request.execute(app).post('/api/predictions/p1/bets').send({ userId, outcome, amount })
+  return requester.post('/api/predictions/p1/bets').send({ userId, outcome, amount })
 }
 
 function resolve(outcome = 'Yes', userId = 'u2') {
-  return request.execute(app).post('/api/predictions/p1/resolve').send({ userId, outcome })
+  return requester.post('/api/predictions/p1/resolve').send({ userId, outcome })
 }
 
 describe('Prediction routes', () => {
+  before(() => {
+    requester = request.execute(app).keepOpen()
+  })
+
+  after((done) => requester.close(done))
+
   beforeEach(() => resetData())
 
   it('loads only the selected group and hides passwords', async () => {
-    const res = await request.execute(app).get('/api/groups/g1/predictions?userId=u1')
+    const res = await requester.get('/api/groups/g1/predictions?userId=u1')
     expect(res).to.have.status(200)
     expect(res.body.group.openPredictions).to.equal(3)
     expect(res.body.predictions.map((prediction) => prediction.groupId)).to.deep.equal(['g1', 'g1', 'g1'])
@@ -37,7 +44,7 @@ describe('Prediction routes', () => {
   })
 
   it('loads a prediction with its outcomes and betting status', async () => {
-    const res = await request.execute(app).get('/api/predictions/p1?userId=u1')
+    const res = await requester.get('/api/predictions/p1?userId=u1')
     expect(res).to.have.status(200)
     expect(res.body.outcomes).to.deep.equal(['Yes', 'No'])
     expect(res.body.bettingClosed).to.equal(false)
@@ -45,15 +52,15 @@ describe('Prediction routes', () => {
 
   it('rejects a missing group, prediction, or account', async () => {
     for (const path of ['/api/groups/missing/predictions?userId=u1', '/api/predictions/missing?userId=u1', '/api/predictions/p1?userId=missing']) {
-      const res = await request.execute(app).get(path)
+      const res = await requester.get(path)
       expect(res).to.have.status(404)
     }
   })
 
   it('rejects nonmembers for both reading and changing predictions', async () => {
-    const list = await request.execute(app).get('/api/groups/g1/predictions?userId=u5')
-    const detail = await request.execute(app).get('/api/predictions/p1?userId=u5')
-    const create = await request.execute(app).post('/api/groups/g1/predictions').send({ ...validPrediction(), userId: 'u5' })
+    const list = await requester.get('/api/groups/g1/predictions?userId=u5')
+    const detail = await requester.get('/api/predictions/p1?userId=u5')
+    const create = await requester.post('/api/groups/g1/predictions').send({ ...validPrediction(), userId: 'u5' })
     const wager = await bet('u5')
     for (const res of [list, detail, create, wager]) expect(res).to.have.status(403)
     expect(db.predictions).to.have.length(6)
@@ -61,7 +68,7 @@ describe('Prediction routes', () => {
   })
 
   it('creates a prediction with a unique ID and updates the group count', async () => {
-    const res = await request.execute(app).post('/api/groups/g1/predictions').send(validPrediction())
+    const res = await requester.post('/api/groups/g1/predictions').send(validPrediction())
     expect(res).to.have.status(201)
     expect(res.body).to.include({ creatorId: 'u1', groupId: 'g1', stake: 25 })
     expect(res.body.bets).to.deep.equal([])
@@ -70,7 +77,7 @@ describe('Prediction routes', () => {
   })
 
   it('accepts two to five outcomes and 250 characters', async () => {
-    const res = await request.execute(app).post('/api/groups/g1/predictions').send({
+    const res = await requester.post('/api/groups/g1/predictions').send({
       ...validPrediction(), outcomes: ['a'.repeat(250), 'No', 'Maybe', 'Later', 'Never']
     })
     expect(res).to.have.status(201)
@@ -89,17 +96,17 @@ describe('Prediction routes', () => {
     ]
     const saved = JSON.stringify(db)
     for (const fields of invalid) {
-      const res = await request.execute(app).post('/api/groups/g1/predictions').send({ ...validPrediction(), ...fields })
+      const res = await requester.post('/api/groups/g1/predictions').send({ ...validPrediction(), ...fields })
       expect(res).to.have.status(400)
       expect(JSON.stringify(db)).to.equal(saved)
     }
   })
 
   it('edits and deletes an unbet prediction as its creator', async () => {
-    const edited = await request.execute(app).patch('/api/predictions/p2').send({ ...validPrediction(), question: 'Updated question?' })
+    const edited = await requester.post('/api/predictions/p2').send({ ...validPrediction(), question: 'Updated question?' })
     expect(edited).to.have.status(200)
     expect(edited.body.question).to.equal('Updated question?')
-    const deleted = await request.execute(app).delete('/api/predictions/p2').send({ userId: 'u1' })
+    const deleted = await requester.delete('/api/predictions/p2').send({ userId: 'u1' })
     expect(deleted).to.have.status(200)
     expect(db.predictions.some((prediction) => prediction.id === 'p2')).to.equal(false)
     expect(db.groups[0].openPredictions).to.equal(2)
@@ -107,9 +114,9 @@ describe('Prediction routes', () => {
 
   it('rejects invalid edits and another user editing or deleting', async () => {
     const saved = JSON.stringify(db.predictions)
-    const invalid = await request.execute(app).patch('/api/predictions/p2').send({ ...validPrediction(), outcomes: ['Yes', 'Yes'] })
-    const edit = await request.execute(app).patch('/api/predictions/p1').send(validPrediction())
-    const remove = await request.execute(app).delete('/api/predictions/p1').send({ userId: 'u1' })
+    const invalid = await requester.post('/api/predictions/p2').send({ ...validPrediction(), outcomes: ['Yes', 'Yes'] })
+    const edit = await requester.post('/api/predictions/p1').send(validPrediction())
+    const remove = await requester.delete('/api/predictions/p1').send({ userId: 'u1' })
     expect(invalid).to.have.status(400)
     expect(edit).to.have.status(403)
     expect(remove).to.have.status(403)
@@ -120,8 +127,8 @@ describe('Prediction routes', () => {
     await bet()
     for (const resolved of [false, true]) {
       if (resolved) await resolve()
-      const edit = await request.execute(app).patch('/api/predictions/p1').send({ ...validPrediction(), userId: 'u2' })
-      const remove = await request.execute(app).delete('/api/predictions/p1').send({ userId: 'u2' })
+      const edit = await requester.post('/api/predictions/p1').send({ ...validPrediction(), userId: 'u2' })
+      const remove = await requester.delete('/api/predictions/p1').send({ userId: 'u2' })
       expect(edit).to.have.status(403)
       expect(remove).to.have.status(403)
     }
@@ -133,7 +140,7 @@ describe('Prediction routes', () => {
     expect(res.body.user.coinBalance).to.equal(1475)
     expect(res.body.user).to.not.have.property('password')
     expect(res.body.prediction.bets[0]).to.include({ userId: 'u1', outcome: 'Yes', amount: 25 })
-    const login = await request.execute(app).post('/api/auth/login').send({ email: 'maya@gmail.com', password: 'Password@123' })
+    const login = await requester.post('/api/auth/login').send({ email: 'maya@gmail.com', password: 'Password@123' })
     expect(login.body.coinBalance).to.equal(1475)
     expect(db.users[1].coinBalance).to.equal(1200)
   })
@@ -166,7 +173,7 @@ describe('Prediction routes', () => {
   it('rejects bets after the deadline or resolution', async () => {
     db.predictions[0].deadline = new Date(0).toISOString()
     expect(await bet()).to.have.status(400)
-    const detail = await request.execute(app).get('/api/predictions/p1?userId=u1')
+    const detail = await requester.get('/api/predictions/p1?userId=u1')
     expect(detail.body.bettingClosed).to.equal(true)
     await resolve()
     expect(await bet()).to.have.status(400)

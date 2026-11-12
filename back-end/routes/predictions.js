@@ -112,7 +112,7 @@ router.post('/groups/:groupId/predictions', (req, res) => {
   res.status(201).json(publicPrediction(prediction))
 })
 
-router.patch('/predictions/:predictionId', (req, res) => {
+router.post('/predictions/:predictionId', (req, res) => {
   const data = getMemberData(req, res)
   if (!data) return
   const error = editError(data.prediction, data.user)
