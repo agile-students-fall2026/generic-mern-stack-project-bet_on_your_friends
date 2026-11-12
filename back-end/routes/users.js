@@ -5,14 +5,25 @@ const { db } = require('../data')
 const router = express.Router()
 
 // password requirements: 8-64 characters, uppercase, lowercase, & a number
-function isValidPassword(password) {
-  return (
-    password.length >= 8 &&
-    password.length <= 64 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /[0-9]/.test(password)
-  )
+// returns the first rule the password breaks or null
+function passwordRuleError(password) {
+  if (password.length < 8 || password.length > 64) {
+    return 'New password must be 8-64 characters.'
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return 'New password must include an uppercase letter.'
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return 'New password must include a lowercase letter.'
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return 'New password must include a number.'
+  }
+
+  return null
 }
 
 // change password -> PATCH /api/users/:userId/password
@@ -39,11 +50,11 @@ router.patch('/:userId/password', (req, res) => {
     return res.status(401).json({ error: 'Your current password is incorrect.' })
   }
 
-  if (!isValidPassword(newPassword)) {
-    return res.status(400).json({
-      error:
-        'New password must be 8-64 characters with one uppercase letter, one lowercase letter, and one number.'
-    })
+  // new password must follow every password rule
+  const ruleError = passwordRuleError(newPassword)
+
+  if (ruleError) {
+    return res.status(400).json({ error: ruleError })
   }
 
   if (newPassword !== confirmPassword) {
