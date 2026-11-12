@@ -44,7 +44,9 @@ npm install
 npm run dev
 ```
 
-This will open up localhost:3000. More testing details TBD.
+This will open up localhost:3000. Keep both servers running. Log in with `maya@gmail.com` or `jordan@gmail.com`, using `Password@123`, to try predictions in Roommate Rivals. The back-end uses shared mock data that resets when the server restarts.
+
+In `back-end`, run `npm test` for the Mocha/Chai tests and `npm run coverage` for the c8 coverage report.
 
 You can also test changes before creating a PR:
 

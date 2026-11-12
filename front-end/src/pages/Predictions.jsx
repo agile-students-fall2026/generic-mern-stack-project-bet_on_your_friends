@@ -8,7 +8,7 @@ import PredictionForm from '../components/PredictionForm'
 import FilterButtons from '../components/FilterButtons'
 import PredictionComments from '../components/PredictionComments'
 import PredictionBettors from '../components/PredictionBettors'
-import { getMockPredictionData, createMockPrediction, editMockPrediction, deleteMockPrediction, placeMockBet, resolveMockPrediction,} from '../services/mockPredictions'
+import { getPredictionData, createPrediction, editPrediction, deletePrediction, placeBet, resolvePrediction } from '../services/predictions'
 import BetResult from '../components/BetResult'
 
 const buttonStyle = 'rounded-lg bg-nyu-violet p-3 font-semibold text-white disabled:bg-gray-300'
@@ -43,22 +43,27 @@ function Predictions() {
   } }
 
   async function loadData() {
-    const result = await getMockPredictionData(groupId, account)
+    const result = await getPredictionData(groupId, account.id)
     setData({ ...result })
     logIn({ ...result.users.find((person) => person.id === account.id) })
   }
 
   useEffect(() => {
     let buffer = false
-    getMockPredictionData(groupId, account)
-      .then((result) => { if (!buffer) setData({ ...result }) })
+    getPredictionData(groupId, account.id, selectedId)
+      .then((result) => {
+        if (!buffer) {
+          setData(result)
+          const savedUser = result.users.find((person) => person.id === account.id)
+          if (savedUser.coinBalance !== account.coinBalance) logIn(savedUser)
+        }
+      })
       .catch((problem) => { if (!buffer) setError(problem.message) })
     return () => { buffer = true }
-  }, [groupId, account])
+  }, [groupId, account.id, account.coinBalance, selectedId, logIn])
 
   function openPrediction(id) {
     setShowBettors(false)
-    loadData().catch((problem) => setError(problem.message))
     setSelectedId(id)
     setError('')
     setMessage('')
@@ -71,10 +76,10 @@ function Predictions() {
     setError('')
     try {
       if (editing) {
-        await editMockPrediction(data, editing.id, values)
+        await editPrediction(data, editing.id, values)
         setSelectedId(editing.id)
       } else {
-        const prediction = await createMockPrediction(data, values)
+        const prediction = await createPrediction(data, values)
         setSelectedId(prediction.id)
       }
       await loadData()
@@ -106,19 +111,19 @@ function Predictions() {
     setError('')
     try {
       if (action === 'placeBet') {
-        await placeMockBet(data, dialog.predictionId, dialog.outcome, dialog.amount)
+        await placeBet(data, dialog.predictionId, dialog.outcome, dialog.amount)
         await loadData()
         setBetAmount('')
         setDialog({ type: 'bet', title: 'Bet placed', message: `Your bet of ${dialog.amount} coins on ${dialog.outcome} was recorded.` })
         return
       }
       if (action === 'delete') {
-        await deleteMockPrediction(data, selectedId)
+        await deletePrediction(data, selectedId)
         setSelectedId(null)
         setMessage('Prediction deleted.')
       }
       if (action === 'resolve') {
-        await resolveMockPrediction(data, selectedId, winningOutcome)
+        await resolvePrediction(data, selectedId, winningOutcome)
         setMessage('Final outcome saved and coin balances updated.')
       }
       if (action !== 'bet') await loadData()
@@ -127,7 +132,7 @@ function Predictions() {
     }
   }
 
-  if (!data) {
+  if (!data || data.group.id !== groupId) {
     return (
       <AppLayout title="Predictions" back={fromMyBets ? '/bets' : '/groups'}>
         <p role="status">{error || 'Loading predictions...'}</p>
@@ -151,7 +156,7 @@ const filteredPredictions = data.predictions.filter((prediction) => {
   }
 
   if (filter === 'Open') {
-    return !prediction.result && new Date(prediction.deadline) > new Date()
+    return !prediction.result && !prediction.bettingClosed
   }
 
   return true
