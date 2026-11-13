@@ -180,8 +180,12 @@ describe('GET /api/users/:userId/groups', () => {
   })
 
   it('sends back every group the user is a member of', async () => {
+    // arrange -> Maya (u1) is a member of g1 and g2 in mock data
+
+    // act -> get Maya's groups
     const res = await request.execute(app).get('/api/users/u1/groups')
 
+    // assert -> only her two groups show
     expect(res).to.have.status(200)
     expect(res.body.map((group) => group.id)).to.deep.equal(['g1', 'g2'])
     expect(res.body[0]).to.include({
@@ -192,8 +196,12 @@ describe('GET /api/users/:userId/groups', () => {
   })
 
   it('returns a 404 error when the user does not exist', async () => {
+    // arrange -> a user id that isn't in the mock data
+
+    // act -> try to get their groups
     const res = await request.execute(app).get('/api/users/not-a-user/groups')
 
+    // assert -> no account found error
     expect(res).to.have.status(404)
     expect(res.body.error).to.equal('This account does not exist.')
   })
