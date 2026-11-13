@@ -1,4 +1,4 @@
-// tests for the change password route
+// tests for the change password and my groups routes
 import { use, expect } from 'chai'
 import { default as chaiHttp, request } from 'chai-http'
 import app from '../app.js'
@@ -170,5 +170,39 @@ describe('PATCH /api/users/:userId/password', () => {
     // assert -> asked to pick a different password
     expect(res).to.have.status(400)
     expect(res.body.error).to.equal('New password must be different from your current password.')
+  })
+})
+
+describe('GET /api/users/:userId/groups', () => {
+  // start every test with the same mock data
+  beforeEach(() => {
+    resetData()
+  })
+
+  it('sends back every group the user is a member of', async () => {
+    // arrange -> Maya (u1) is a member of g1 and g2 in mock data
+
+    // act -> get Maya's groups
+    const res = await request.execute(app).get('/api/users/u1/groups')
+
+    // assert -> only her two groups show
+    expect(res).to.have.status(200)
+    expect(res.body.map((group) => group.id)).to.deep.equal(['g1', 'g2'])
+    expect(res.body[0]).to.include({
+      name: 'Roommate Rivals',
+      photoSeed: 'roommate-rivals',
+      openPredictions: 3
+    })
+  })
+
+  it('returns a 404 error when the user does not exist', async () => {
+    // arrange -> a user id that isn't in the mock data
+
+    // act -> try to get their groups
+    const res = await request.execute(app).get('/api/users/not-a-user/groups')
+
+    // assert -> no account found error
+    expect(res).to.have.status(404)
+    expect(res.body.error).to.equal('This account does not exist.')
   })
 })
