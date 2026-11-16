@@ -5,11 +5,11 @@ const seedGroups = [
     name: 'Roommate Rivals',
     description: 'Who will finally clean the kitchen first?',
     visibility: 'private',
-    whoCanInvite: 'all',
+    whoCanInvite: 'all', // anyone can invite
     inviteCode: 'ROOM26',
     adminIds: ['u1'],
     memberIds: ['u1', 'u2', 'u3', 'u4'],
-    memberLimit: null, // no limit
+    memberLimit: 5, 
     photoSeed: 'roommate-rivals',
     openPredictions: 3
   },
@@ -18,13 +18,13 @@ const seedGroups = [
     name: 'Study Squad',
     description: 'Predictions about exams and deadlines.',
     visibility: 'private',
-    whoCanInvite: 'admins',
+    whoCanInvite: 'admins', // only admins can invite 
     inviteCode: 'STUDY1',
     adminIds: ['u2'],
     memberIds: ['u2', 'u1', 'u5'],
-    memberLimit: 10,
+    memberLimit: 10, 
     photoSeed: 'study-squad',
-    openPredictions: 1
+    openPredictions: 1 // to be shown what the prediction is 
   },
   {
     // full group to test that nobody else can join
@@ -32,13 +32,13 @@ const seedGroups = [
     name: 'Gym Buddies',
     description: 'Who skips leg day first?',
     visibility: 'private',
-    whoCanInvite: 'all',
+    whoCanInvite: 'all', // anyone can invite 
     inviteCode: 'GYM333',
     adminIds: ['u3'],
     memberIds: ['u3', 'u4'],
     memberLimit: 2,
     photoSeed: 'gym-buddies',
-    openPredictions: 0
+    openPredictions: 0 
   },
   {
     // group with two admins
