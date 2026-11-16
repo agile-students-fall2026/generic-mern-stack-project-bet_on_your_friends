@@ -65,7 +65,8 @@ function AppLayout({ title, back, children }) {
   return (
     <div className="min-h-screen bg-[#f8f5fb]">
       <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
-        <div className="mx-auto grid max-w-md grid-cols-3 items-center px-4 py-3">
+        {/* ensures the title gets the rest of header space */}
+        <div className="mx-auto grid max-w-md grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
           <div>
             {back && (
               <Link to={back} className="text-sm font-semibold text-nyu-violet">
@@ -74,7 +75,8 @@ function AppLayout({ title, back, children }) {
             )}
           </div>
 
-          <h1 className="text-center text-lg font-bold whitespace-nowrap">
+          {/* long titles get cut off with "..." instead of overlapping the coins */}
+          <h1 className="truncate text-center text-lg font-bold">
             {title}
           </h1>
 

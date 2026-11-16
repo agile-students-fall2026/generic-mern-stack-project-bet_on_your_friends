@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/auth'
-import { getMockGroupById, isGroupFull } from '../services/mockGroups'
+import { apiRequest } from '../services/api'
+import { isGroupFull } from '../services/mockGroups'
 
 function InviteFriends() {
   const { groupId } = useParams()
@@ -21,11 +22,12 @@ function InviteFriends() {
   useEffect(() => {
     let buffer = false
 
-    getMockGroupById(groupId)
+    apiRequest(`/api/groups/${groupId}`)
       .then((foundGroup) => {
         if (!buffer) setGroup(foundGroup)
       })
       .catch((error) => {
+        // back-end's 404 error when group doesn't exist
         if (!buffer) setLoadError(error.message)
       })
       .finally(() => {
