@@ -11,3 +11,20 @@ export async function getPredictionData(groupId, userId, predictionId) {
   }
   return data
 }
+
+// convert form values for the server
+function predictionBody(data, values) {
+  return {
+    ...values,
+    userId: data.currentUserId,
+    stake: Number(values.stake),
+    deadline: new Date(values.deadline).toISOString()
+  }
+}
+
+// post a new prediction
+export function createPrediction(data, values) {
+  return apiRequest(`/api/groups/${data.group.id}/predictions`, {
+    method: 'POST', body: predictionBody(data, values)
+  })
+}

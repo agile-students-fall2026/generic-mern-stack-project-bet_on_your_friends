@@ -1,5 +1,6 @@
 // prediction routes using shared mock data
 const express = require('express')
+const { randomUUID } = require('crypto')
 const { db, toPublicUser } = require('../data')
 
 const router = express.Router()
@@ -34,6 +35,29 @@ function getMemberData(req, res) {
   return { group, user, prediction }
 }
 
+// check the prediction form fields
+function predictionError(values) {
+  const { question, outcomes, deadline, stake } = values ?? {}
+  if (typeof question !== 'string' || !question.trim()) return 'Enter a question.'
+  if (!Array.isArray(outcomes) || outcomes.length < 2 || outcomes.length > 5 ||
+      outcomes.some((outcome) => typeof outcome !== 'string' || !outcome.trim())) {
+    return 'Enter between two and five outcomes.'
+  }
+  if (outcomes.some((outcome) => outcome.length > 250)) return 'Keep each outcome within 250 characters.'
+  const cleanOutcomes = outcomes.map((outcome) => outcome.trim().toLowerCase())
+  if (new Set(cleanOutcomes).size !== cleanOutcomes.length) return 'Each outcome must be different.'
+  if (!Number.isSafeInteger(stake) || stake < 1) return 'Enter a positive whole number of coins.'
+
+  const chosenDeadline = new Date(deadline)
+  const latestDeadline = new Date()
+  latestDeadline.setFullYear(latestDeadline.getFullYear() + 1)
+  if (typeof deadline !== 'string' || !deadline || Number.isNaN(chosenDeadline.getTime()) ||
+      chosenDeadline <= new Date() || chosenDeadline > latestDeadline) {
+    return 'Choose a future deadline within the next year.'
+  }
+  return ''
+}
+
 // count unresolved predictions whose deadlines have not passed
 function updateCount(group) {
   group.openPredictions = db.predictions.filter((prediction) =>
@@ -64,6 +88,30 @@ router.get('/predictions/:predictionId', (req, res) => {
   const data = getMemberData(req, res)
   if (!data) return
   res.json(publicPrediction(data.prediction))
+})
+
+// create a prediction
+router.post('/groups/:groupId/predictions', (req, res) => {
+  const data = getMemberData(req, res)
+  if (!data) return
+  const error = predictionError(req.body)
+  if (error) return res.status(400).json({ error })
+  const { question, outcomes, deadline, stake } = req.body
+  const prediction = {
+    id: randomUUID(),
+    groupId: data.group.id,
+    creatorId: data.user.id,
+    question: question.trim(),
+    outcomes: outcomes.map((outcome) => outcome.trim()),
+    deadline: new Date(deadline).toISOString(),
+    stake,
+    bets: [],
+    comments: [],
+    result: null
+  }
+  db.predictions.push(prediction)
+  updateCount(data.group)
+  res.status(201).json(publicPrediction(prediction))
 })
 
 module.exports = router
