@@ -28,3 +28,17 @@ export function createPrediction(data, values) {
     method: 'POST', body: predictionBody(data, values)
   })
 }
+
+// save changes to a prediction
+export function editPrediction(data, id, values) {
+  return apiRequest(`/api/predictions/${id}`, {
+    method: 'POST', body: predictionBody(data, values)
+  })
+}
+
+// delete a prediction as its creator
+export function deletePrediction(data, id) {
+  return apiRequest(`/api/predictions/${id}`, {
+    method: 'DELETE', body: { userId: data.currentUserId }
+  })
+}
