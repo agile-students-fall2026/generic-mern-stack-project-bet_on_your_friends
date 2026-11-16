@@ -6,23 +6,25 @@ const router = express.Router()
 
 // password requirements: 8-64 characters, uppercase, lowercase, & a number
 // returns the first rule the password breaks or null
-function passwordRuleError(password) {
-  if (password.length < 8 || password.length > 64) {
+// TODO: Add comments for each if statement 
+function passwordRuleError(password) { 
+  // Length check 
+  if (password.length < 8 || password.length > 64) { 
     return 'New password must be 8-64 characters.'
   }
-
+  // Uppercase check 
   if (!/[A-Z]/.test(password)) {
     return 'New password must include an uppercase letter.'
   }
-
+  // Lowercase check
   if (!/[a-z]/.test(password)) {
     return 'New password must include a lowercase letter.'
   }
-
+  // Number check 
   if (!/[0-9]/.test(password)) {
     return 'New password must include a number.'
   }
-
+  // all requirements were met 
   return null
 }
 
