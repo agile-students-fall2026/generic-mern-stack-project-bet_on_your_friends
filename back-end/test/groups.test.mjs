@@ -21,7 +21,7 @@ describe('GET /api/groups/:groupId', () => {
     expect(res.body).to.include({
       inviteCode: 'ROOM26',
       whoCanInvite: 'all',
-      memberLimit: null
+      memberLimit: 5
     })
     expect(res.body.memberIds).to.have.lengthOf(4)
     expect(res.body.adminIds).to.deep.equal(['u1'])
