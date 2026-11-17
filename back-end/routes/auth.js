@@ -22,9 +22,10 @@ router.post('/login', (req, res) => {
       .status(400)
       .json({ error: 'Please enter your email and password.' })
   }
-
+  // convert email to lowercase 
   const normalizedEmail = email.trim().toLowerCase()
 
+  // invalid email check 
   if (!emailPattern.test(normalizedEmail)) {
     return res.status(400).json({ error: 'Please enter a valid email address.' })
   }
