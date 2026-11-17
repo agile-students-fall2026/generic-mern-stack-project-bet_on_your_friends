@@ -58,17 +58,6 @@ function saveMockGroups(groups) {
   sessionStorage.setItem(storageKey, JSON.stringify(groups))
 }
 
-// random, unclaimed 6-alphanumeric invite code
-function createInviteCode(groups) {
-  const inviteCode = faker.string.alphanumeric({ length: 6, casing: 'upper' })
-
-  if (groups.some((group) => group.inviteCode === inviteCode)) {
-    return createInviteCode(groups)
-  }
-
-  return inviteCode
-}
-
 // mock picsum seed for group picture
 export function getRandomMockGroupPhotoSeed() {
   return faker.string.uuid()
@@ -153,37 +142,6 @@ export async function addMockMemberships(userId) {
   }
 
   saveMockGroups(groups)
-}
-
-// simulate creating a group
-export async function createMockGroup({
-  name,
-  description,
-  whoCanInvite,
-  memberLimit,
-  photoSeed,
-  creatorId
-}) {
-  const groups = await loadMockGroups()
-
-  const group = {
-    id: `g${Date.now()}`,
-    name: name.trim(),
-    description: description.trim(),
-    visibility: 'private',
-    whoCanInvite: whoCanInvite,
-    inviteCode: createInviteCode(groups),
-    adminIds: [creatorId],
-    memberIds: [creatorId],
-    memberLimit: memberLimit,
-    photoSeed: photoSeed,
-    openPredictions: 0
-  }
-
-  groups.push(group)
-  saveMockGroups(groups)
-
-  return group
 }
 
 // simulate joining a group via invite
