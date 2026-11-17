@@ -6,7 +6,7 @@ import data from '../data/index.js'
 
 use(chaiHttp)
 
-const { resetData } = data
+const { db, resetData } = data
 
 describe('GET /api/groups/:groupId', () => {
   // start every test with the same mock data
@@ -116,16 +116,34 @@ describe('POST /api/groups', () => {
       changes: { name: '' },
       error: 'Enter a group name.'
     },
+    // test for group name that is too long
+    {
+      problem: 'the name is longer than 40 characters',
+      changes: { name: 'a'.repeat(41) },
+      error: 'Group name must be 40 characters or less.'
+    },
     // test for group description that is too long
     {
       problem: 'the description is longer than 200 characters',
       changes: { description: 'a'.repeat(201) },
       error: 'Description must be 200 characters or less.'
     },
-    // test for group with not in range member limit
+    // test for group member limit below the range
     {
-      problem: 'the member limit is not from 2 to 20',
+      problem: 'the member limit is below 2',
+      changes: { memberLimit: 1 },
+      error: 'Member limit must be a whole number 2 or greater.'
+    },
+    // test for group member limit above the range
+    {
+      problem: 'the member limit is above 20',
       changes: { memberLimit: 21 },
+      error: 'Member limit must be a whole number 20 or less.'
+    },
+    // test for group member limit that isn't a whole number
+    {
+      problem: 'the member limit is not a whole number',
+      changes: { memberLimit: 2.5 },
       error: 'Member limit must be a whole number from 2 to 20.'
     }
   ]
@@ -134,13 +152,15 @@ describe('POST /api/groups', () => {
     it(`returns a 400 error when ${problem}`, async () => {
       // arrange -> valid group details with one invalid field
       const body = newGroup(changes)
+      const groupCount = db.groups.length
 
       // act -> try to create the group
       const res = await request.execute(app).post('/api/groups').send(body)
 
-      // assert -> error explains which field is invalid
+      // assert -> error explains which field is invalid and no group was saved
       expect(res).to.have.status(400)
       expect(res.body.error).to.equal(error)
+      expect(db.groups).to.have.lengthOf(groupCount)
     })
   }
 })
