@@ -4,7 +4,7 @@ import app from '../app.js'
 import data from '../data/index.js'
 
 use(chaiHttp)
-const { resetData } = data
+const { db, resetData } = data
 let requester
 
 describe('Reading predictions', () => {
@@ -19,8 +19,17 @@ describe('Reading predictions', () => {
     // Assert
     expect(res).to.have.status(200)
     expect(res.body.predictions.map((item) => item.groupId)).to.deep.equal(['g1', 'g1', 'g1'])
-    expect(res.body.group.openPredictions).to.equal(3)
     expect(res.body.users.every((user) => !('password' in user))).to.equal(true)
+  })
+
+  it('excludes resolved predictions from the open count', async () => {
+    // Arrange
+    db.predictions.find((prediction) => prediction.id === 'p1').result = 'Yes'
+    // Act
+    const res = await requester.get('/api/groups/g1/predictions?userId=u1')
+    // Assert
+    expect(res).to.have.status(200)
+    expect(res.body.group.openPredictions).to.equal(2)
   })
 
   it('returns prediction details', async () => {
