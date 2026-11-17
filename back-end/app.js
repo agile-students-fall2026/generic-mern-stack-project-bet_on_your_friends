@@ -20,7 +20,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRouter)
 app.use('/api/users', usersRouter)
 
-// group routes -> /api/groups/:groupId and /api/groups/:groupId/members
+// group routes -> /api/groups, /api/groups/:groupId, and /api/groups/:groupId/members
 app.use('/api/groups', groupsRouter)
 app.use('/api', predictionsRouter)
 
