@@ -132,13 +132,13 @@ describe('POST /api/groups', () => {
     {
       problem: 'the member limit is below 2',
       changes: { memberLimit: 1 },
-      error: 'Member limit must be a whole number 2 or greater.'
+      error: 'Member limit must be a whole number from 2 to 20.'
     },
     // test for group member limit above the range
     {
       problem: 'the member limit is above 20',
       changes: { memberLimit: 21 },
-      error: 'Member limit must be a whole number 20 or less.'
+      error: 'Member limit must be a whole number from 2 to 20.'
     },
     // test for group member limit that isn't a whole number
     {
