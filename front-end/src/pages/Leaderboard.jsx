@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import { getDisplayName, useAuth } from '../context/auth'
-import { getMockGroupsForUser } from '../services/mockGroups'
-import { getMockMembers } from '../services/mockMembers'
+import { apiRequest } from '../services/api'
 
 function Leaderboard() {
   const { user } = useAuth()
@@ -26,14 +25,14 @@ function Leaderboard() {
     async function load() {
       setError('')
 
-      const groups = await getMockGroupsForUser(user.id)
+      const groups = await apiRequest(`/api/users/${user.id}/groups`)
       let group = groups.find((item) => item.id === selected)
       if (!group) {
         group = groups[0]
       }
       let members = []
       if (group) {
-        members = await getMockMembers(group.id, user)
+        members = await apiRequest(`/api/groups/${group.id}/leaderboard`)
       }      
       /* Shows the top 3 and includes the current user's row if they're 
       outside top 3, with their actual rank. Removed alphabetical sorting and members
