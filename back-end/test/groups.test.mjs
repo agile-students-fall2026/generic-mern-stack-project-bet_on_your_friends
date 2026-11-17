@@ -1,4 +1,4 @@
-// tests for the create group, group details, and members routes
+// tests for the create group, group details, members, and join group routes
 import { use, expect } from 'chai'
 import { default as chaiHttp, request } from 'chai-http'
 import app from '../app.js'
@@ -143,4 +143,66 @@ describe('POST /api/groups', () => {
       expect(res.body.error).to.equal(error)
     })
   }
+})
+
+describe('GET /api/groups/invite/:inviteCode', () => {
+  // start every test with the same mock data
+  beforeEach(() => {
+    resetData()
+  })
+
+  it('sends back the group for a valid invite code', async () => {
+    // arrange -> Roommate Rivals (g1) invite code ROOM26
+
+    // act -> look up associated invite code
+    const res = await request.execute(app).get('/api/groups/invite/ROOM26')
+
+    // assert -> Roommate Rivals retrieved
+    expect(res).to.have.status(200)
+    expect(res.body).to.include({ id: 'g1', name: 'Roommate Rivals' })
+  })
+
+  it('returns a 404 error for an invalid invite code', async () => {
+    // arrange -> an invalid invite code (NOPE00)
+
+    // act -> look up the invite code
+    const res = await request.execute(app).get('/api/groups/invite/NOPE00')
+
+    // assert -> invalid invite error
+    expect(res).to.have.status(404)
+    expect(res.body.error).to.equal('This invite link is invalid or has expired.')
+  })
+})
+
+describe('POST /api/groups/:groupId/join', () => {
+  // start every test with the same mock data
+  beforeEach(() => {
+    resetData()
+  })
+
+  it('adds the user to the group', async () => {
+    // arrange -> Alex (u5) isn't in Roommate Rivals (g1)
+    const body = { userId: 'u5' }
+
+    // act -> Alex joins the group and gets the group's members
+    const res = await request.execute(app).post('/api/groups/g1/join').send(body)
+    const members = await request.execute(app).get('/api/groups/g1/members')
+
+    // assert -> Alex was saved as a new non-admin member
+    expect(res).to.have.status(200)
+    expect(res.body.memberIds).to.include('u5')
+    expect(members.body).to.deep.include({ id: 'u5', name: 'Alex Kim', isAdmin: false })
+  })
+
+  it('returns a 400 error when the group is full', async () => {
+    // arrange -> Gym Buddies (g3) is full without Alex (u5) as a member
+    const body = { userId: 'u5' }
+
+    // act -> Alex tries to join the group
+    const res = await request.execute(app).post('/api/groups/g3/join').send(body)
+
+    // assert -> group full error
+    expect(res).to.have.status(400)
+    expect(res.body.error).to.equal('This group is full and cannot be joined.')
+  })
 })

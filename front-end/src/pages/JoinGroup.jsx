@@ -2,11 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import { useAuth } from '../context/auth'
-import {
-  getMockGroupByInviteCode,
-  isGroupFull,
-  joinMockGroup
-} from '../services/mockGroups'
+import { apiRequest } from '../services/api'
+import { isGroupFull } from '../services/mockGroups'
 
 function JoinGroup() {
   const { inviteCode } = useParams()
@@ -18,16 +15,17 @@ function JoinGroup() {
   const [joining, setJoining] = useState(false)
   const [error, setError] = useState('')
 
-  // load group for invite
+  // load group for invite from back-end
   useEffect(() => {
     let buffer = false
 
-    getMockGroupByInviteCode(inviteCode)
+    apiRequest(`/api/groups/invite/${encodeURIComponent(inviteCode)}`)
       .then((foundGroup) => {
         if (!buffer) setGroup(foundGroup)
       })
       .catch((loadError) => {
-        if (!buffer) setError(loadError.message)
+        // no group has this code; show "Invite not found"
+        if (!buffer && loadError.status !== 404) setError(loadError.message)
       })
       .finally(() => {
         if (!buffer) setLoading(false)
@@ -45,13 +43,16 @@ function JoinGroup() {
   const groupFull = group ? isGroupFull(group) : false
 
   // run upon acceptance
-  // TODO: set a limit for the number of users that can join a group: e.g. limit it to 10-20 users
   async function handleJoin() {
     setError('')
     setJoining(true)
 
     try {
-      await joinMockGroup(group.id, user.id)
+      // back-end adds the user or sends an error if group is full
+      await apiRequest(`/api/groups/${group.id}/join`, {
+        method: 'POST',
+        body: { userId: user.id }
+      })
 
       navigate('/groups', { state: { joinedGroupName: group.name } })
     } catch (joinError) {
