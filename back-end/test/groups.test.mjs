@@ -214,15 +214,31 @@ describe('POST /api/groups/:groupId/join', () => {
     expect(members.body).to.deep.include({ id: 'u5', name: 'Alex Kim', isAdmin: false })
   })
 
+  it('does not add the user twice when they join again', async () => {
+    // arrange -> Alex (u5) joins Roommate Rivals (g1), which fills its last spot
+    const body = { userId: 'u5' }
+    await request.execute(app).post('/api/groups/g1/join').send(body)
+
+    // act -> Alex sends the same join request again
+    const res = await request.execute(app).post('/api/groups/g1/join').send(body)
+
+    // assert -> still 5 members with Alex only once, not a group full error
+    expect(res).to.have.status(200)
+    expect(res.body.memberIds).to.have.lengthOf(5)
+    expect(res.body.memberIds.filter((id) => id === 'u5')).to.have.lengthOf(1)
+  })
+
   it('returns a 400 error when the group is full', async () => {
     // arrange -> Gym Buddies (g3) is full without Alex (u5) as a member
     const body = { userId: 'u5' }
 
-    // act -> Alex tries to join the group
+    // act -> Alex tries to join the group and get the group's members
     const res = await request.execute(app).post('/api/groups/g3/join').send(body)
+    const members = await request.execute(app).get('/api/groups/g3/members')
 
-    // assert -> group full error
+    // assert -> group full error with Alex not added
     expect(res).to.have.status(400)
     expect(res.body.error).to.equal('This group is full and cannot be joined.')
+    expect(members.body.map((member) => member.id)).to.deep.equal(['u3', 'u4'])
   })
 })
