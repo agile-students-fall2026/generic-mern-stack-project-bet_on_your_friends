@@ -16,8 +16,6 @@ const maxFileSize = 5 * 1024 * 1024
 const imageExtensions = {
   'image/png': '.png',
   'image/jpeg': '.jpg',
-  'image/gif': '.gif',
-  'image/webp': '.webp'
 }
 
 // save each image with a random name so uploads never overwrite each other
