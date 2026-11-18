@@ -32,16 +32,12 @@ function Leaderboard() {
       }
       let members = []
       if (group) {
+        // the backend sends members sorted by coin balance
         members = await apiRequest(`/api/groups/${group.id}/leaderboard`)
-      }      
-      /* Shows the top 3 and includes the current user's row if they're 
-      outside top 3, with their actual rank. Removed alphabetical sorting and members
-      with the same balance now share a rank, like, 1, 2, 2, 4 */
+      } 
 
-      members.sort((firstMember, secondMember) => {
-        return secondMember.coinBalance - firstMember.coinBalance
-      })
       if (active) setData({ groups, group, members, selected })
+    
     }
     load().catch((reason) => {
       if (active) setError(reason.message)
@@ -57,23 +53,25 @@ function Leaderboard() {
   const ready = data && data.selected === selected
   let visibleMembers = []
 
-if (ready) {
-  // Show the top three members.
-  visibleMembers = data.members.slice(0, 3)
+  // Show the top three, plus your row if you're outside the top three.
+  // Ranks use the full list, so tied balances share a rank.
+  if (ready) {
+    visibleMembers = data.members.slice(0, 3)
 
-  const currentMember = data.members.find((member) => {
-    return member.id === user.id
-  })
+    const currentMember = data.members.find((member) => {
+      return member.id === user.id
+    })
 
-  const userInTopThree = visibleMembers.some((member) => {
-    return member.id === user.id
-  })
+    const userInTopThree = visibleMembers.some((member) => {
+      return member.id === user.id
+    })
 
-  // Add your row if you are outside the top three.
-  if (currentMember && !userInTopThree) {
-    visibleMembers.push(currentMember)
+    // Add your row if you are outside the top three.
+    if (currentMember && !userInTopThree) {
+      visibleMembers.push(currentMember)
+    }
   }
-}
+
   return (
     <AppLayout title="Leaderboard">
       {error && (
