@@ -50,7 +50,7 @@ router.post('/', (req, res) => {
 
     // no file was sent or it wasn't an image
     if (!req.file) {
-      return res.status(400).json({ error: 'Please choose an image file.' })
+      return res.status(400).json({ error: 'Please choose a PNG or JPEG image.' })
     }
 
     // the image is served from /uploads by express.static

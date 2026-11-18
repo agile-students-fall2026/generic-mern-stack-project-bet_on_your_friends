@@ -36,9 +36,23 @@ export async function apiRequest(path, { method = 'GET', body } = {}) {
   return data
 }
 
+// image types and size the back-end accepts for uploads
+const imageTypes = ['image/png', 'image/jpeg']
+const maxImageSize = 5 * 1024 * 1024
+
 // upload an image file and return the URL back-end serves it from
 export async function uploadImage(file) {
+  // check file first so an invalid file is never sent to back-end
+  if (!imageTypes.includes(file.type)) {
+    throw new Error('Please choose a PNG or JPEG image.')
+  }
+
+  if (file.size > maxImageSize) {
+    throw new Error('Images must be 5 MB or smaller.')
+  }
+
   const formData = new FormData()
+
   formData.append('image', file)
 
   const { url } = await apiRequest('/api/uploads', { method: 'POST', body: formData })

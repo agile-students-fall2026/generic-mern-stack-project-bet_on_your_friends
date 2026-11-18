@@ -50,7 +50,7 @@ describe('POST /api/uploads', () => {
       problem: 'the file is not an image',
       file: Buffer.from('not an image'),
       options: { filename: 'notes.txt', contentType: 'text/plain' },
-      error: 'Please choose an image file.'
+      error: 'Please choose a PNG or JPEG image.'
     },
     {
       problem: 'the image is larger than 5 MB',
@@ -59,10 +59,16 @@ describe('POST /api/uploads', () => {
       error: 'Images must be 5 MB or smaller.'
     },
     {
+      problem: 'the file is a gif image',
+      file: Buffer.from('GIF89a'),
+      options: { filename: 'photo.gif', contentType: 'image/gif' },
+      error: 'Please choose a PNG or JPEG image.'
+    },
+    {
       problem: 'the file is an svg image',
       file: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>'),
       options: { filename: 'photo.svg', contentType: 'image/svg+xml' },
-      error: 'Please choose an image file.'
+      error: 'Please choose a PNG or JPEG image.'
     },
 
   ]

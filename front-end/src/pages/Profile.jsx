@@ -205,7 +205,7 @@ function Profile() {
           {changingPhoto ? 'Changing profile picture...' : 'Change profile picture'}
           <input
             type="file"
-            accept="image/*"
+            accept="image/png, image/jpeg"
             className="sr-only"
             disabled={changingPhoto}
             onChange={handlePhotoChange}

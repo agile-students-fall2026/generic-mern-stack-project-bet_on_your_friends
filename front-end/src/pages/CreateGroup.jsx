@@ -193,7 +193,7 @@ function CreateGroup() {
             {changingPhoto ? 'Changing group picture...' : 'Change group picture'}
             <input
               type="file"
-              accept="image/*"
+              accept="image/png, image/jpeg"
               className="sr-only"
               disabled={changingPhoto}
               onChange={handlePhotoChange}
