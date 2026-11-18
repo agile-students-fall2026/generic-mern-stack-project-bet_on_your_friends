@@ -24,8 +24,11 @@ export async function apiRequest(path, { method = 'GET', body } = {}) {
   const data = await response.json().catch(() => null)
 
   // 400 and 500 errors
+  // keep the status code so pages can handle errors (like 404) differently
   if (!response.ok) {
-    throw new Error(data?.error || 'Something went wrong. Please try again.')
+    const error = new Error(data?.error || 'Something went wrong. Please try again.')
+    error.status = response.status
+    throw error
   }
 
   return data
