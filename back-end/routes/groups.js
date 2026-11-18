@@ -1,7 +1,7 @@
-// routes for creating a group and viewing a group and its members -> /api/groups
+// routes for creating, viewing, and joining groups -> /api/groups
 const express = require('express')
 const { randomInt, randomUUID } = require('crypto')
-const { db } = require('../data')
+const { db, isGroupFull } = require('../data')
 
 const router = express.Router()
 
@@ -23,6 +23,11 @@ const inviteCodeLength = 6
 // find a group by its id
 function findGroup(groupId) {
   return db.groups.find((group) => group.id === groupId)
+}
+
+// find a user by their id
+function findUser(userId) {
+  return db.users.find((user) => user.id === userId)
 }
 
 // randomly generated 6-character available invite code
@@ -52,7 +57,7 @@ router.post('/', (req, res) => {
     creatorId
   } = req.body ?? {}
 
-  const creator = db.users.find((user) => user.id === creatorId)
+  const creator = findUser(creatorId)
 
   // group creator must have account
   if (!creator) {
@@ -116,6 +121,22 @@ router.post('/', (req, res) => {
   res.status(201).json(group)
 })
 
+// group from an invite link -> GET /api/groups/invite/:inviteCode
+router.get('/invite/:inviteCode', (req, res) => {
+  // invite codes are capital letters and numbers so lowercase codes still match
+  const inviteCode = req.params.inviteCode.toUpperCase()
+  const group = db.groups.find((match) => match.inviteCode === inviteCode)
+
+  // no matching group 404 error
+  if (!group) {
+    return res
+      .status(404)
+      .json({ error: 'This invite link is invalid or has expired.' })
+  }
+
+  res.json(group)
+})
+
 // group details -> GET /api/groups/:groupId
 // includes invite code, who can invite, member limit, and member/admin lists
 router.get('/:groupId', (req, res) => {
@@ -138,7 +159,7 @@ router.get('/:groupId/members', (req, res) => {
   }
 
   const members = group.memberIds.map((memberId) => {
-    const member = db.users.find((user) => user.id === memberId)
+    const member = findUser(memberId)
 
     return {
       id: memberId,
@@ -148,6 +169,39 @@ router.get('/:groupId/members', (req, res) => {
   })
 
   res.json(members)
+})
+
+// join group -> POST /api/groups/:groupId/join with { userId }
+router.post('/:groupId/join', (req, res) => {
+  const group = findGroup(req.params.groupId)
+
+  if (!group) {
+    return res.status(404).json({ error: 'This group could not be found.' })
+  }
+
+  // req.body is undefined when nothing was sent so fall back to an empty object
+  const { userId } = req.body ?? {}
+  const user = findUser(userId)
+
+  if (!user) {
+    return res.status(404).json({ error: 'This account does not exist.' })
+  }
+
+  // nothing to add if already a member
+  if (group.memberIds.includes(user.id)) {
+    return res.json(group)
+  }
+
+  // unable to join if member limit hit
+  if (isGroupFull(group)) {
+    return res
+      .status(400)
+      .json({ error: 'This group is full and cannot be joined.' })
+  }
+
+  group.memberIds.push(user.id)
+
+  res.json(group)
 })
 
 // leaderboard -> GET /api/groups/:groupId/leaderboard
