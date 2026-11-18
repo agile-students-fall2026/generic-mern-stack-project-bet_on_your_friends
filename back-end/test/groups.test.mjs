@@ -164,3 +164,43 @@ describe('POST /api/groups', () => {
     })
   }
 })
+
+describe('GET /api/groups/:groupId/leaderboard', () => {
+  // Start each test with the original balances.
+  beforeEach(() => {
+    resetData()
+  })
+
+  it('returns group members from highest balance to lowest', async () => {
+    const res = await request.execute(app).get('/api/groups/g1/leaderboard')
+
+    expect(res).to.have.status(200)
+
+    // Checking the IDs also makes sure people outside g1 aren't included.
+    expect(res.body.map((member) => member.id)).to.deep.equal([
+      'u3', 'u1', 'u2', 'u4'
+    ])
+  })
+
+  it('returns a 404 for a group that does not exist', async () => {
+    const res = await request.execute(app).get(
+      '/api/groups/not-a-group/leaderboard'
+    )
+
+    expect(res).to.have.status(404)
+    expect(res.body.error).to.equal('This group could not be found.')
+  })
+
+  it('keeps members with equal balances together', async () => {
+    // Give u1 and u2 equal balances so we can test a tie.
+    db.users.find((user) => user.id === 'u1').coinBalance = 1200
+    db.users.find((user) => user.id === 'u2').coinBalance = 1200
+
+    const res = await request.execute(app).get('/api/groups/g1/leaderboard')
+
+    expect(res).to.have.status(200)
+    expect(res.body.map((member) => member.coinBalance)).to.deep.equal([
+      2300, 1200, 1200, 800
+    ])
+  })
+})
