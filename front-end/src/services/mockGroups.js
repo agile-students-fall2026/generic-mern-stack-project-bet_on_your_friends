@@ -32,7 +32,7 @@ function generateMockGroups() {
         inviteCode: faker.string.alphanumeric({ length: 6, casing: 'upper' }),
         adminIds: [memberIds[0]],
         memberIds: memberIds,
-        memberLimit: null,
+        memberLimit: 20,
         openPredictions: faker.number.int({ min: 0, max: 5 })
       }
     },
@@ -121,14 +121,6 @@ export async function getMockGroupMembers(groupId) {
   })
 }
 
-// get group invite code
-export async function getMockGroupByInviteCode(inviteCode) {
-  const groups = await loadMockGroups()
-  return (
-    groups.find((group) => group.inviteCode === inviteCode.toUpperCase()) ?? null
-  )
-}
-
 // returning users already belong to some groups
 export async function addMockMemberships(userId) {
   const groups = await loadMockGroups()
@@ -142,27 +134,6 @@ export async function addMockMemberships(userId) {
   }
 
   saveMockGroups(groups)
-}
-
-// simulate joining a group via invite
-export async function joinMockGroup(groupId, userId) {
-  const groups = await loadMockGroups()
-  const group = groups.find((group) => group.id === groupId)
-
-  if (!group) {
-    throw new Error('This invite is no longer valid.')
-  }
-
-  if (!group.memberIds.includes(userId)) {
-    if (isGroupFull(group)) {
-      throw new Error('This group is full and cannot be joined.')
-    }
-
-    group.memberIds.push(userId)
-    saveMockGroups(groups)
-  }
-
-  return group
 }
 
 // simulate leaving a group
