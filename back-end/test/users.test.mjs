@@ -1,4 +1,4 @@
-// tests for the change password and my groups routes
+// tests for the profile settings, change password, and my groups routes
 import { use, expect } from 'chai'
 import { default as chaiHttp, request } from 'chai-http'
 import app from '../app.js'
@@ -205,4 +205,74 @@ describe('GET /api/users/:userId/groups', () => {
     expect(res).to.have.status(404)
     expect(res.body.error).to.equal('This account does not exist.')
   })
+})
+
+describe('PATCH /api/users/:userId', () => {
+  // start every test with the same mock data
+  beforeEach(() => {
+    resetData()
+  })
+
+  // send a profile settings request for Maya (u1)
+  function updateProfile(body) {
+    return request.execute(app).patch('/api/users/u1').send(body)
+  }
+
+  it('saves a new display name and profile picture', async () => {
+    // arrange -> a new display name and an uploaded image's URL
+    const body = { displayName: '  Maya C  ', photoUrl: '/uploads/maya.png' }
+
+    // act -> update Maya's profile, then log in as Maya again
+    const res = await updateProfile(body)
+    const login = await logInAsMaya(seededPassword)
+
+    // assert -> trimmed name and picture were saved and password isn't sent back
+    expect(res).to.have.status(200)
+    expect(res.body).to.include({ displayName: 'Maya C', photoUrl: '/uploads/maya.png' })
+    expect(res.body).to.not.have.property('password')
+    expect(login.body).to.include({ displayName: 'Maya C', photoUrl: '/uploads/maya.png' })
+  })
+
+  it('returns a 400 error when the profile picture was not uploaded', async () => {
+    // arrange -> a picture URL from another site instead of /uploads
+    const body = { photoUrl: 'https://example.com/maya.png' }
+
+    // act -> try to update Maya's profile, then log in as Maya again
+    const res = await updateProfile(body)
+    const login = await logInAsMaya(seededPassword)
+
+    // assert -> image error and no profile picture
+    expect(res).to.have.status(400)
+    expect(res.body.error).to.equal('Please choose an image file.')
+    expect(login.body).to.not.have.property('photoUrl')
+  })
+
+  // tests per display name rule
+  const invalidNames = [
+    {
+      problem: 'shorter than 3 characters',
+      displayName: ' M a ',
+      error: 'Display name must be at least 3 characters.'
+    },
+    {
+      problem: 'longer than 30 characters',
+      displayName: 'a'.repeat(31),
+      error: 'Display name must be 30 characters or less.'
+    }
+  ]
+
+  for (const { problem, displayName, error } of invalidNames) {
+    it(`returns a 400 error when the display name is ${problem}`, async () => {
+      // arrange -> display name that breaks one rule
+
+      // act -> try to update Maya's profile, then log in as Maya again
+      const res = await updateProfile({ displayName })
+      const login = await logInAsMaya(seededPassword)
+
+      // assert -> error names the rule and no display name
+      expect(res).to.have.status(400)
+      expect(res.body.error).to.equal(error)
+      expect(login.body).to.not.have.property('displayName')
+    })
+  }
 })

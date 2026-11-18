@@ -63,15 +63,6 @@ export function getRandomMockGroupPhotoSeed() {
   return faker.string.uuid()
 }
 
-// simulate uploading group picture chosen from user's device
-export async function uploadMockGroupPhoto(file) {
-  if (!file.type.startsWith('image/')) {
-    throw new Error('Please choose an image file.')
-  }
-
-  return getRandomMockGroupPhotoSeed()
-}
-
 // check if group has reached member limit
 export function isGroupFull(group) {
   return group.memberLimit != null && group.memberIds.length >= group.memberLimit
@@ -134,19 +125,4 @@ export async function addMockMemberships(userId) {
   }
 
   saveMockGroups(groups)
-}
-
-// simulate existing group picture change by admin
-export async function updateMockGroupPhoto(groupId, userId, file) {
-  const groups = await loadMockGroups()
-  const group = groups.find((group) => group.id === groupId)
-
-  if (!group || !group.adminIds.includes(userId)) {
-    throw new Error('Only admins can change group picture.')
-  }
-
-  group.photoSeed = await uploadMockGroupPhoto(file)
-  saveMockGroups(groups)
-
-  return group
 }

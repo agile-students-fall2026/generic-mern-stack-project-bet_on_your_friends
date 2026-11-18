@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
-import { apiRequest } from '../services/api'
-import {
-  updateMockDisplayName,
-  updateMockProfilePhoto
-} from '../services/mockProfile'
+import { apiRequest, uploadImage } from '../services/api'
 
 // form input stlying -> rounded boxes
 // red outline -> error
@@ -99,7 +95,11 @@ function Profile() {
     setSaving(true)
 
     try {
-      const updatedUser = await updateMockDisplayName(user, displayName)
+      // back-end checks the name's length and saves it
+      const updatedUser = await apiRequest(`/api/users/${user.id}`, {
+        method: 'PATCH',
+        body: { displayName }
+      })
 
       // save updated user so the new name updates everywhere
       logIn(updatedUser)
@@ -124,7 +124,12 @@ function Profile() {
     setChangingPhoto(true)
 
     try {
-      const updatedUser = await updateMockProfilePhoto(user, file)
+      // upload image, then save its URL as the profile picture
+      const uploadedUrl = await uploadImage(file)
+      const updatedUser = await apiRequest(`/api/users/${user.id}`, {
+        method: 'PATCH',
+        body: { photoUrl: uploadedUrl }
+      })
 
       // save updated user so new photo updates everywhere
       logIn(updatedUser)

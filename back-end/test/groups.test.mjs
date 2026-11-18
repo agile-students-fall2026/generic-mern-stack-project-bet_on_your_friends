@@ -1,4 +1,4 @@
-// tests for the create group, group details, members, join group, and leave group routes
+// tests for the create group, group details, members, group picture, join group, and leave group routes
 import { use, expect } from 'chai'
 import { default as chaiHttp, request } from 'chai-http'
 import app from '../app.js'
@@ -18,7 +18,7 @@ describe('GET /api/groups/:groupId', () => {
     // arrange -> Roommate Rivals (g1) with Maya (u1) as its admin
 
     // act -> get the group's details
-    const res = await request.execute(app).get('/api/groups/g1')
+  const res = await request.execute(app).get('/api/groups/g1')
 
     // assert -> invite code, invite setting, member limit, and member/admin lists retrieved
     expect(res).to.have.status(200)
@@ -58,8 +58,20 @@ describe('GET /api/groups/:groupId/members', () => {
     // assert -> every member comes back with their name and whether they're an admin
     expect(res).to.have.status(200)
     expect(res.body).to.have.lengthOf(4)
-    expect(res.body[0]).to.deep.equal({ id: 'u1', name: 'Maya Chen', isAdmin: true })
-    expect(res.body[1]).to.deep.equal({ id: 'u2', name: 'Jordan Lee', isAdmin: false })
+    expect(res.body[0]).to.deep.equal({ id: 'u1', name: 'Maya Chen', photoUrl: null, isAdmin: true })
+    expect(res.body[1]).to.deep.equal({ id: 'u2', name: 'Jordan Lee', photoUrl: null, isAdmin: false })
+  })
+
+  it("sends back a member's uploaded profile picture", async () => {
+    // arrange -> Maya (u1) saves an uploaded profile picture
+    await request.execute(app).patch('/api/users/u1').send({ photoUrl: '/uploads/maya.png' })
+
+    // act -> get members of Roommate Rivals (g1)
+    const res = await request.execute(app).get('/api/groups/g1/members')
+
+    // assert -> other members see Maya's new picture
+    expect(res).to.have.status(200)
+    expect(res.body[0]).to.include({ id: 'u1', photoUrl: '/uploads/maya.png' })
   })
 
   it('returns a 404 error when the group and its members do not exist', async () => {
@@ -107,6 +119,18 @@ describe('POST /api/groups', () => {
     expect(res.body.adminIds).to.deep.equal(['u1'])
     expect(res.body.memberIds).to.deep.equal(['u1'])
     expect(myGroups.body.map((group) => group.id)).to.include(res.body.id)
+  })
+
+  it('saves an uploaded group picture with new group', async () => {
+    // arrange -> valid group details with an uploaded image's URL
+    const body = newGroup({ photoUrl: '/uploads/movie-night.png' })
+
+    // act -> create group
+    const res = await request.execute(app).post('/api/groups').send(body)
+
+    // assert -> uploaded picture was saved with group
+    expect(res).to.have.status(201)
+    expect(res.body.photoUrl).to.equal('/uploads/movie-night.png')
   })
 
   const invalidGroups = [
@@ -211,7 +235,7 @@ describe('POST /api/groups/:groupId/join', () => {
     // assert -> Alex was saved as a new non-admin member
     expect(res).to.have.status(200)
     expect(res.body.memberIds).to.include('u5')
-    expect(members.body).to.deep.include({ id: 'u5', name: 'Alex Kim', isAdmin: false })
+    expect(members.body).to.deep.include({ id: 'u5', name: 'Alex Kim', photoUrl: null, isAdmin: false })
   })
 
   it('does not add the user twice when they join again', async () => {
@@ -328,5 +352,55 @@ describe('POST /api/groups/:groupId/leave', () => {
     // assert -> group not found error
     expect(res).to.have.status(404)
     expect(res.body.error).to.equal('This group could not be found.')
+  })
+})
+
+describe('PATCH /api/groups/:groupId', () => {
+  // start every test with the same mock data
+  beforeEach(() => {
+    resetData()
+  })
+
+  // send change group picture request
+  function changeGroupPhoto(userId, photoUrl) {
+    return request.execute(app).patch('/api/groups/g1').send({ userId, photoUrl })
+  }
+
+  it('lets an admin change the group picture', async () => {
+    // arrange -> Maya (u1) is admin of Roommate Rivals (g1)
+
+    // act -> Maya changes picture, then get the group's details
+    const res = await changeGroupPhoto('u1', '/uploads/rivals.png')
+    const group = await request.execute(app).get('/api/groups/g1')
+
+    // assert -> new picture was saved
+    expect(res).to.have.status(200)
+    expect(group.body.photoUrl).to.equal('/uploads/rivals.png')
+  })
+
+  it('returns a 400 error when the picture was not uploaded', async () => {
+    // arrange -> Maya (u1) is an admin but picture URL is from another site
+
+    // act -> Maya tries to change picture, then get the group's details
+    const res = await changeGroupPhoto('u1', 'https://example.com/rivals.png')
+    const group = await request.execute(app).get('/api/groups/g1')
+
+    // assert -> image error and picture wasn't changed
+    expect(res).to.have.status(400)
+    expect(res.body.error).to.equal('Please choose an image file.')
+    expect(group.body).to.not.have.property('photoUrl')
+  })
+
+  it('returns a 403 error when a member who is not an admin changes the picture', async () => {
+    // arrange -> Jordan (u2) is a member of Roommate Rivals (g1) but not an admin
+
+    // act -> Jordan tries to change picture, then get group's details
+    const res = await changeGroupPhoto('u2', '/uploads/rivals.png')
+    const group = await request.execute(app).get('/api/groups/g1')
+
+    // assert -> admin only error and picture wasn't changed
+    expect(res).to.have.status(403)
+    expect(res.body.error).to.equal('Only admins can change the group picture.')
+    expect(group.body).to.not.have.property('photoUrl')
   })
 })

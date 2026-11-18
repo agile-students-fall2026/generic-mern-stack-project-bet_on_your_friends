@@ -144,7 +144,7 @@ function MyGroups() {
               className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-nyu-violet"
             >
               <img
-                src={`https://picsum.photos/seed/${group.photoSeed || group.id}/96/96`}
+                src={group.photoUrl || `https://picsum.photos/seed/${group.photoSeed || group.id}/96/96`}
                 alt=""
                 className="h-14 w-14 shrink-0 rounded-lg bg-nyu-lavender object-cover"
               />

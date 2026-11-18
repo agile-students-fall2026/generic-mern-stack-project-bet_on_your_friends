@@ -1,12 +1,14 @@
 // sends requests to Express back-end
-// vite forwards every /api request to localhost:3000
+// vite forwards every /api and /uploads request to localhost:3000
 
 // send a request and return the JSON the back-end sends back
 export async function apiRequest(path, { method = 'GET', body } = {}) {
   const options = { method, headers: {} }
 
-  // send any data as a JSON
-  if (body !== undefined) {
+  // send files as form data and any other data as JSON
+  if (body instanceof FormData) {
+    options.body = body
+  } else if (body !== undefined) {
     options.headers['Content-Type'] = 'application/json'
     options.body = JSON.stringify(body)
   }
@@ -32,4 +34,14 @@ export async function apiRequest(path, { method = 'GET', body } = {}) {
   }
 
   return data
+}
+
+// upload an image file and return the URL back-end serves it from
+export async function uploadImage(file) {
+  const formData = new FormData()
+  formData.append('image', file)
+
+  const { url } = await apiRequest('/api/uploads', { method: 'POST', body: formData })
+
+  return url
 }

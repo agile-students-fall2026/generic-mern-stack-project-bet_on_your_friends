@@ -3,11 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/auth'
-import { apiRequest } from '../services/api'
-import {
-  getRandomMockGroupPhotoSeed,
-  uploadMockGroupPhoto
-} from '../services/mockGroups'
+import { apiRequest, uploadImage } from '../services/api'
+import { getRandomMockGroupPhotoSeed } from '../services/mockGroups'
 
 // form input stlying -> rounded boxes
 // red outline -> error
@@ -56,7 +53,10 @@ function CreateGroup() {
   const [memberLimitTouched, setMemberLimitTouched] = useState(false)
 
   // random mock group picture until changed
-  const [photoSeed, setPhotoSeed] = useState(getRandomMockGroupPhotoSeed)
+  const [photoSeed] = useState(getRandomMockGroupPhotoSeed)
+
+  // uploaded group picture
+  const [photoUrl, setPhotoUrl] = useState('')
 
   // change and display error for group picture
   const [changingPhoto, setChangingPhoto] = useState(false)
@@ -121,9 +121,9 @@ function CreateGroup() {
     setChangingPhoto(true)
 
     try {
-      const newPhotoSeed = await uploadMockGroupPhoto(file)
+      // upload image to back-end and show it as group picture
+      setPhotoUrl(await uploadImage(file))
 
-      setPhotoSeed(newPhotoSeed)
       setToastMessage('Group picture updated.')
     } catch (error) {
       setPhotoError(error.message)
@@ -151,6 +151,7 @@ function CreateGroup() {
           whoCanInvite,
           memberLimit: Number(memberLimit),
           photoSeed,
+          photoUrl,
           creatorId: user.id
         }
       })
@@ -176,7 +177,7 @@ function CreateGroup() {
           <p className="font-medium">Group Picture</p>
 
           <img
-            src={`https://picsum.photos/seed/${photoSeed}/600/240`}
+            src={photoUrl || `https://picsum.photos/seed/${photoSeed}/600/240`}
             alt=""
             className="mt-2 h-32 w-full rounded-xl bg-nyu-lavender object-cover shadow-sm"
           />

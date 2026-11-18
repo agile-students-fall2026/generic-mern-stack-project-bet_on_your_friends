@@ -6,9 +6,10 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    // forward every /api request from the front-end to the back-end
+    // forward every /api request and uploaded image from the front-end to the back-end
     proxy: {
-      '/api': 'http://localhost:3000'
+      '/api': 'http://localhost:3000',
+      '/uploads': 'http://localhost:3000'
     }
   }
 })

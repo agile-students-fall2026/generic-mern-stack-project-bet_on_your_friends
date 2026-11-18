@@ -19,4 +19,9 @@ function resetData() {
 
 resetData()
 
-module.exports = { db, resetData, toPublicUser, isGroupFull }
+// check that a picture URL points to an image uploaded to /api/uploads
+function isUploadedImage(url) {
+  return typeof url === 'string' && /^\/uploads\/[\w-]+(\.[a-z0-9]+)?$/i.test(url)
+}
+
+module.exports = { db, resetData, toPublicUser, isGroupFull, isUploadedImage }
