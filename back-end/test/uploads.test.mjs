@@ -28,8 +28,9 @@ describe('POST /api/uploads', () => {
   })
 
   it('saves an image and serves it from its URL', async () => {
-    // arrange -> a small file sent as png image
-    const image = Buffer.from('fake image data')
+    // arrange -> a small file that starts as a real png image
+    const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    const image = Buffer.concat([pngSignature, Buffer.from('image data')])
 
     // act -> upload image, then request it from URL that came back
     const res = await requester
@@ -50,6 +51,12 @@ describe('POST /api/uploads', () => {
       problem: 'the file is not an image',
       file: Buffer.from('not an image'),
       options: { filename: 'notes.txt', contentType: 'text/plain' },
+      error: 'Please choose a PNG or JPEG image.'
+    },
+    {
+      problem: 'the file is labeled as a png but is not',
+      file: Buffer.from('not an image'),
+      options: { filename: 'photo.png', contentType: 'image/png' },
       error: 'Please choose a PNG or JPEG image.'
     },
     {

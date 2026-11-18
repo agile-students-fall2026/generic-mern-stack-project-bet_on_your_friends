@@ -3,8 +3,23 @@ import { use, expect } from 'chai'
 import { default as chaiHttp, request } from 'chai-http'
 import app from '../app.js'
 import data from '../data/index.js'
+import fs from 'fs'
 
 use(chaiHttp)
+
+// save test images in uploads folder so picture URLs point to real uploads
+const testImages = ['maya.png', 'movie-night.png', 'rivals.png']
+const uploadsFolder = new URL('../uploads/', import.meta.url)
+
+before(() => {
+  fs.mkdirSync(uploadsFolder, { recursive: true })
+  for (const image of testImages) fs.writeFileSync(new URL(image, uploadsFolder), 'test image')
+})
+
+// delete test images after all tests
+after(() => {
+  for (const image of testImages) fs.rmSync(new URL(image, uploadsFolder), { force: true })
+})
 
 const { db, resetData } = data
 

@@ -2,6 +2,8 @@
 const { seedUsers, toPublicUser } = require('./users')
 const { seedGroups, isGroupFull } = require('./groups')
 const { seedPredictions } = require('./predictions')
+const fs = require('fs')
+const path = require('path')
 
 // routes always use db.users, db.groups, and db.predictions so resetData() can swap in fresh copies
 const db = {
@@ -21,7 +23,11 @@ resetData()
 
 // check that a picture URL points to an image uploaded to /api/uploads
 function isUploadedImage(url) {
-  return typeof url === 'string' && /^\/uploads\/[\w-]+(\.[a-z0-9]+)?$/i.test(url)
+  return (
+    typeof url === 'string' &&
+    /^\/uploads\/[\w-]+\.(png|jpg)$/.test(url) &&
+    fs.existsSync(path.join(__dirname, '..', url))
+  )
 }
 
 module.exports = { db, resetData, toPublicUser, isGroupFull, isUploadedImage }
