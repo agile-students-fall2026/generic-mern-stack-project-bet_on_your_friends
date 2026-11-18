@@ -24,13 +24,17 @@ describe('Editing and deleting predictions', () => {
 
   it('lets the creator edit and delete before anyone bets', async () => {
     // Arrange
-    const form = { ...validPrediction(), question: 'Updated question?' }
+    const form = { ...validPrediction(), question: 'Updated question?', outcomes: ['Friday', 'Saturday'], stake: 50 }
     // Act
     const edited = await requester.post('/api/predictions/p2').send(form)
+    const saved = await requester.get('/api/predictions/p2?userId=u1')
     const deleted = await requester.delete('/api/predictions/p2').send({ userId: 'u1' })
     // Assert
     expect(edited).to.have.status(200)
     expect(edited.body.question).to.equal('Updated question?')
+    expect(saved).to.have.status(200)
+    expect(saved.body).to.include({ question: form.question, stake: 50, deadline: form.deadline })
+    expect(saved.body.outcomes).to.deep.equal(form.outcomes)
     expect(deleted).to.have.status(200)
     expect(db.predictions.some((item) => item.id === 'p2')).to.equal(false)
     expect(db.groups[0].openPredictions).to.equal(2)
@@ -57,12 +61,14 @@ describe('Editing and deleting predictions', () => {
       { bets: [], result: 'Yes' }]
     for (const state of states) {
       Object.assign(prediction, state)
+      const saved = JSON.stringify(db.predictions)
       // Act
       const edit = await requester.post('/api/predictions/p2').send(validPrediction())
       const remove = await requester.delete('/api/predictions/p2').send({ userId: 'u1' })
       // Assert
       expect(edit).to.have.status(403)
       expect(remove).to.have.status(403)
+      expect(JSON.stringify(db.predictions)).to.equal(saved)
     }
   })
 })
