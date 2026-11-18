@@ -136,28 +136,6 @@ export async function addMockMemberships(userId) {
   saveMockGroups(groups)
 }
 
-// simulate leaving a group
-export async function leaveMockGroup(groupId, userId) {
-  const groups = await loadMockGroups()
-  const group = groups.find((group) => group.id === groupId)
-
-  if (!group || !group.memberIds.includes(userId)) {
-    throw new Error('You are not a member of this group.')
-  }
-
-  group.memberIds = group.memberIds.filter((memberId) => memberId !== userId)
-  group.adminIds = group.adminIds.filter((adminId) => adminId !== userId)
-
-  if (group.memberIds.length === 0) {
-    groups.splice(groups.indexOf(group), 1)
-  } else if (group.adminIds.length === 0) {
-    // make the next member admin if the last admin leaves
-    group.adminIds.push(group.memberIds[0])
-  }
-
-  saveMockGroups(groups)
-}
-
 // simulate existing group picture change by admin
 export async function updateMockGroupPhoto(groupId, userId, file) {
   const groups = await loadMockGroups()
