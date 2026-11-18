@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/auth'
+import { apiRequest } from '../services/api'
 import {
-  createMockGroup,
   getRandomMockGroupPhotoSeed,
   uploadMockGroupPhoto
 } from '../services/mockGroups'
@@ -142,13 +142,17 @@ function CreateGroup() {
     setSubmitting(true)
 
     try {
-      const group = await createMockGroup({
-        name,
-        description,
-        whoCanInvite,
-        memberLimit: Number(memberLimit),
-        photoSeed,
-        creatorId: user.id
+      // back-end checks the group details and sends the new group back with its invite code
+      const group = await apiRequest('/api/groups', {
+        method: 'POST',
+        body: {
+          name,
+          description,
+          whoCanInvite,
+          memberLimit: Number(memberLimit),
+          photoSeed,
+          creatorId: user.id
+        }
       })
 
       navigate(`/groups/${group.id}/invite`, { replace: true })
