@@ -39,6 +39,7 @@ function getMemberData(req, res) {
 function predictionError(values) {
   const { question, outcomes, deadline, stake } = values ?? {}
   if (typeof question !== 'string' || !question.trim()) return 'Enter a question.'
+  if (question.length > 250) return 'Keep the question within 250 characters.'
   if (!Array.isArray(outcomes) || outcomes.length < 2 || outcomes.length > 5 ||
       outcomes.some((outcome) => typeof outcome !== 'string' || !outcome.trim())) {
     return 'Enter between two and five outcomes.'
@@ -46,7 +47,7 @@ function predictionError(values) {
   if (outcomes.some((outcome) => outcome.length > 250)) return 'Keep each outcome within 250 characters.'
   const cleanOutcomes = outcomes.map((outcome) => outcome.trim().toLowerCase())
   if (new Set(cleanOutcomes).size !== cleanOutcomes.length) return 'Each outcome must be different.'
-  if (!Number.isSafeInteger(stake) || stake < 1) return 'Enter a positive whole number of coins.'
+  if (!Number.isSafeInteger(stake) || stake < 1 || stake > 1000) return 'Enter a whole number of coins from 1 to 1,000.'
 
   const chosenDeadline = new Date(deadline)
   const latestDeadline = new Date()

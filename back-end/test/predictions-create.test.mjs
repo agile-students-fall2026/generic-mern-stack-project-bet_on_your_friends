@@ -35,22 +35,28 @@ describe('Creating predictions', () => {
     expect(new Set(db.predictions.map((item) => item.id)).size).to.equal(7)
   })
 
-  it('accepts five outcomes and the 250-character limit', async () => {
+  it('accepts the question, outcome, and stake limits', async () => {
     // Arrange
-    const form = { ...validPrediction(), outcomes: ['a'.repeat(250), 'No', 'Maybe', 'Later', 'Never'] }
+    const form = {
+      ...validPrediction(), question: 'a'.repeat(250), stake: 1000,
+      outcomes: ['a'.repeat(250), 'No', 'Maybe', 'Later', 'Never']
+    }
     // Act
     const res = await requester.post('/api/groups/g1/predictions').send(form)
     // Assert
     expect(res).to.have.status(201)
+    expect(res.body).to.include({ question: form.question, stake: 1000 })
     expect(res.body.outcomes).to.have.length(5)
   })
 
   it('rejects invalid fields without saving a prediction', async () => {
     // Arrange
     const invalid = [
-      { question: ' ' }, { outcomes: ['Yes'] }, { outcomes: ['Yes', ' yes '] },
+      { question: ' ' }, { question: 'a'.repeat(251) },
+      { outcomes: ['Yes'] }, { outcomes: ['Yes', ' yes '] },
       { outcomes: ['1', '2', '3', '4', '5', '6'] }, { outcomes: ['Yes', ''] },
       { outcomes: ['a'.repeat(251), 'No'] }, { stake: 0 }, { stake: 1.5 },
+      { stake: 1001 }, { stake: 234567334567654 },
       { deadline: 'not a date' }, { deadline: new Date(0).toISOString() },
       { deadline: new Date(Date.now() + 370 * 24 * 60 * 60 * 1000).toISOString() }
     ]
