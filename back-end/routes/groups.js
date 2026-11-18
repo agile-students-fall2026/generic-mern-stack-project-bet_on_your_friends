@@ -1,4 +1,4 @@
-// routes for creating, viewing, and joining groups -> /api/groups
+// routes for creating, viewing, joining, and leaving groups -> /api/groups
 const express = require('express')
 const { randomInt, randomUUID } = require('crypto')
 const { db, isGroupFull } = require('../data')
@@ -202,6 +202,40 @@ router.post('/:groupId/join', (req, res) => {
   group.memberIds.push(user.id)
 
   res.json(group)
+})
+
+// leave group -> POST /api/groups/:groupId/leave with { userId }
+router.post('/:groupId/leave', (req, res) => {
+  const group = findGroup(req.params.groupId)
+
+  if (!group) {
+    return res.status(404).json({ error: 'This group could not be found.' })
+  }
+
+  // req.body is undefined when nothing was sent so fall back to an empty object
+  const { userId } = req.body ?? {}
+
+  // position of user in member list (-1 if not member)
+  const memIndex = group.memberIds.indexOf(userId)
+
+  // only members can leave a group
+  if (memIndex === -1) {
+    return res.status(400).json({ error: 'You are not a member of this group.' })
+  }
+
+  // remove user from group's members and admins
+  group.memberIds.splice(memIndex, 1)
+  group.adminIds = group.adminIds.filter((adminId) => adminId !== userId)
+
+  if (group.memberIds.length === 0) {
+    // no one left, so delete
+    db.groups.splice(db.groups.indexOf(group), 1)
+  } else if (group.adminIds.length === 0) {
+    // make next member admin if last admin leaves
+    group.adminIds.push(group.memberIds[0])
+  }
+
+  res.json({ message: 'You left the group.' })
 })
 
 module.exports = router

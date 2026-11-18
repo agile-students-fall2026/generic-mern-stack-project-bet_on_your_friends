@@ -4,11 +4,7 @@ import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
 import { apiRequest } from '../services/api'
-import {
-  isGroupFull,
-  leaveMockGroup,
-  updateMockGroupPhoto
-} from '../services/mockGroups'
+import { isGroupFull, updateMockGroupPhoto } from '../services/mockGroups'
 
 function GroupMembers() {
   const { groupId } = useParams()
@@ -144,7 +140,11 @@ function GroupMembers() {
     setLeaving(true)
 
     try {
-      await leaveMockGroup(group.id, user.id)
+      // back-end removes user and picks a new admin or deletes the group if needed
+      await apiRequest(`/api/groups/${group.id}/leave`, {
+        method: 'POST',
+        body: { userId: user.id }
+      })
 
       // return to my groups with notification
       navigate('/groups', {
