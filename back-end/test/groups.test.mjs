@@ -1,4 +1,4 @@
-// tests for the create group, group details, members, and join group routes
+// tests for the create group, group details, members, join group, and leave group routes
 import { use, expect } from 'chai'
 import { default as chaiHttp, request } from 'chai-http'
 import app from '../app.js'
@@ -240,6 +240,94 @@ describe('POST /api/groups/:groupId/join', () => {
     expect(res).to.have.status(400)
     expect(res.body.error).to.equal('This group is full and cannot be joined.')
     expect(members.body.map((member) => member.id)).to.deep.equal(['u3', 'u4'])
+  })
+})
+
+describe('POST /api/groups/:groupId/leave', () => {
+  // start every test with the same mock data
+  beforeEach(() => {
+    resetData()
+  })
+
+  // send leave group request for a user
+  function leaveGroup(groupId, userId) {
+    return request.execute(app).post(`/api/groups/${groupId}/leave`).send({ userId })
+  }
+
+  it('removes a member from the group', async () => {
+    // arrange -> Jordan (u2) is a member of Roommate Rivals (g1) but not an admin
+
+    // act -> Jordan leaves the group, then get the group's details
+    const res = await leaveGroup('g1', 'u2')
+    const group = await request.execute(app).get('/api/groups/g1')
+
+    // assert -> Jordan has left and Maya (u1) is still admin
+    expect(res).to.have.status(200)
+    expect(group.body.memberIds).to.deep.equal(['u1', 'u3', 'u4'])
+    expect(group.body.adminIds).to.deep.equal(['u1'])
+  })
+
+  it('makes next member admin when last admin leaves', async () => {
+    // arrange -> Maya (u1) is the only admin of Roommate Rivals (g1) and Jordan (u2) is next
+
+    // act -> Maya leaves group, then get the group's details
+    const res = await leaveGroup('g1', 'u1')
+    const group = await request.execute(app).get('/api/groups/g1')
+
+    // assert -> Maya has left and Jordan is now group's admin
+    expect(res).to.have.status(200)
+    expect(group.body.memberIds).to.deep.equal(['u2', 'u3', 'u4'])
+    expect(group.body.adminIds).to.deep.equal(['u2'])
+  })
+
+  it('deletes the group when its last member leaves', async () => {
+    // arrange -> Sam (u4) leaves Gym Buddies (g3), so Priya (u3) is last member
+    await leaveGroup('g3', 'u4')
+
+    // act -> Priya leaves group, then try to get the group's details
+    const res = await leaveGroup('g3', 'u3')
+    const group = await request.execute(app).get('/api/groups/g3')
+
+    // assert -> group no longer exists
+    expect(res).to.have.status(200)
+    expect(group).to.have.status(404)
+  })
+
+  it('returns a 400 error when the user is not a member', async () => {
+    // arrange -> Alex (u5) isn't a member of Roommate Rivals (g1)
+
+    // act -> Alex tries to leave group, then get the group's details
+    const res = await leaveGroup('g1', 'u5')
+    const group = await request.execute(app).get('/api/groups/g1')
+
+    // assert -> not a member error
+    expect(res).to.have.status(400)
+    expect(res.body.error).to.equal('You are not a member of this group.')
+    expect(group.body.memberIds).to.deep.equal(['u1', 'u2', 'u3', 'u4'])
+  })
+
+  it('keeps other admin when one of two admins leaves', async () => {
+    // arrange -> Family Group Chat (g4) has two admins: Sam (u4) and Alex (u5)
+
+    // act -> Sam leaves group, then get the group's details
+    const res = await leaveGroup('g4', 'u4')
+    const group = await request.execute(app).get('/api/groups/g4')
+
+    // assert -> Alex is only member left and is still the only admin
+    expect(res).to.have.status(200)
+    expect(group.body.memberIds).to.deep.equal(['u5'])
+    expect(group.body.adminIds).to.deep.equal(['u5'])
+  })
+
+  it('returns a 404 error when the group does not exist', async () => {
+    // arrange -> a group id that isn't in the mock data
+
+    // act -> Maya (u1) tries to leave group
+    const res = await leaveGroup('not-a-group', 'u1')
+
+    // assert -> group not found error
+    expect(res).to.have.status(404)
+    expect(res.body.error).to.equal('This group could not be found.')
   })
 })
 
