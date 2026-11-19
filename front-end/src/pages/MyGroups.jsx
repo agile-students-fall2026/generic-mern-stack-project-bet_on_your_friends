@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
-import { apiRequest } from '../services/api'
+import { apiRequest, showFallbackPhoto } from '../services/api'
 
 // form input stlying -> rounded boxes
 const inputStyle =
@@ -145,6 +145,7 @@ function MyGroups() {
             >
               <img
                 src={group.photoUrl || `https://picsum.photos/seed/${group.photoSeed || group.id}/96/96`}
+                onError={showFallbackPhoto(`https://picsum.photos/seed/${group.photoSeed || group.id}/96/96`)}
                 alt=""
                 className="h-14 w-14 shrink-0 rounded-lg bg-nyu-lavender object-cover"
               />

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
-import { apiRequest, uploadImage } from '../services/api'
+import { apiRequest, uploadImage, showFallbackPhoto } from '../services/api'
 
 // form input stlying -> rounded boxes
 // red outline -> error
@@ -190,6 +190,7 @@ function Profile() {
       <section className="flex flex-col items-center text-center">
         <img
           src={photoUrl}
+          onError={showFallbackPhoto(`https://picsum.photos/seed/user-${user.id}/192/192`)}
           alt=""
           className="h-24 w-24 rounded-full bg-nyu-lavender object-cover ring-4 ring-white shadow-sm"
         />

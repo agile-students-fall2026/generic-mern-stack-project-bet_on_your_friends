@@ -59,3 +59,10 @@ export async function uploadImage(file) {
 
   return url
 }
+
+// show default picture if an uploaded image is broken
+export function showFallbackPhoto(fallbackUrl) {
+  return (event) => {
+    if (event.currentTarget.src !== fallbackUrl) event.currentTarget.src = fallbackUrl
+  }
+}

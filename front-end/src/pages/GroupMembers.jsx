@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
-import { apiRequest, uploadImage } from '../services/api'
+import { apiRequest, uploadImage, showFallbackPhoto } from '../services/api'
 import { isGroupFull } from '../services/mockGroups'
 
 function GroupMembers() {
@@ -182,6 +182,7 @@ function GroupMembers() {
           {/* group picture display */}
           <img
             src={group.photoUrl || `https://picsum.photos/seed/${group.photoSeed || group.id}/600/240`}
+            onError={showFallbackPhoto(`https://picsum.photos/seed/${group.photoSeed || group.id}/600/240`)}
             alt=""
             className="h-32 w-full rounded-xl bg-nyu-lavender object-cover shadow-sm"
           />
@@ -230,6 +231,7 @@ function GroupMembers() {
                       member.photoUrl ||
                       `https://picsum.photos/seed/user-${member.id}/96/96`
                     }
+                    onError={showFallbackPhoto(`https://picsum.photos/seed/user-${member.id}/96/96`)}
                     alt=""
                     className="h-10 w-10 shrink-0 rounded-full bg-nyu-lavender object-cover"
                   />

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/auth'
-import { apiRequest, uploadImage } from '../services/api'
+import { apiRequest, uploadImage, showFallbackPhoto } from '../services/api'
 import { getRandomMockGroupPhotoSeed } from '../services/mockGroups'
 
 // form input stlying -> rounded boxes
@@ -178,6 +178,7 @@ function CreateGroup() {
 
           <img
             src={photoUrl || `https://picsum.photos/seed/${photoSeed}/600/240`}
+            onError={showFallbackPhoto(`https://picsum.photos/seed/${photoSeed}/600/240`)}
             alt=""
             className="mt-2 h-32 w-full rounded-xl bg-nyu-lavender object-cover shadow-sm"
           />
