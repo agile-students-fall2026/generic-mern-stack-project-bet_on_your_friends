@@ -9,3 +9,10 @@ export async function getPredictionData(groupId, userId, predictionId) {
   }
   return data
 }
+
+// submit the chosen outcome and coins
+export function placeBet(data, id, outcome, amount) {
+  return apiRequest(`/api/predictions/${id}/bets`, {
+    method: 'POST', body: { userId: data.currentUserId, outcome, amount }
+  })
+}
