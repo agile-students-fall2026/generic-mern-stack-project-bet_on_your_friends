@@ -45,10 +45,13 @@ function predictionError(values) {
     return 'Enter between two and five outcomes.'
   }
   if (outcomes.some((outcome) => outcome.length > 250)) return 'Keep each outcome within 250 characters.'
+  // trim spaces and ignore case when checking for duplicate outcomes
   const cleanOutcomes = outcomes.map((outcome) => outcome.trim().toLowerCase())
   if (new Set(cleanOutcomes).size !== cleanOutcomes.length) return 'Each outcome must be different.'
+  // cap the stake at the 1,000 coins given to new accounts
   if (!Number.isSafeInteger(stake) || stake < 1 || stake > 1000) return 'Enter a whole number of coins from 1 to 1,000.'
 
+  // reject invalid dates and deadlines outside the next year
   const chosenDeadline = new Date(deadline)
   const latestDeadline = new Date()
   latestDeadline.setFullYear(latestDeadline.getFullYear() + 1)
