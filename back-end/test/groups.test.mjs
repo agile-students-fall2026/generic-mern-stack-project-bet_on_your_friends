@@ -330,3 +330,51 @@ describe('POST /api/groups/:groupId/leave', () => {
     expect(res.body.error).to.equal('This group could not be found.')
   })
 })
+
+describe('GET /api/groups/:groupId/leaderboard', () => {
+  // Start each test with the original balances.
+  beforeEach(() => {
+    resetData()
+  })
+
+  it('returns group members from highest balance to lowest', async () => {
+    // arrange -> the group has four members with different coin balances
+
+    // act -> get the group's leaderboard
+    const res = await request.execute(app).get('/api/groups/g1/leaderboard')
+
+    // assert -> only the group's members appear, highest balance first
+    expect(res).to.have.status(200)
+    expect(res.body.map((member) => member.id)).to.deep.equal([
+      'u3', 'u1', 'u2', 'u4'
+    ])
+  })
+
+  it('returns a 404 for a group that does not exist', async () => {
+    // arrange -> this group id does not exist
+
+    // act -> request its leaderboard
+    const res = await request.execute(app).get(
+      '/api/groups/not-a-group/leaderboard'
+    )
+
+    // assert -> the route returns a group not found error
+    expect(res).to.have.status(404)
+    expect(res.body.error).to.equal('This group could not be found.')
+  })
+
+  it('keeps members with equal balances together', async () => {
+    // arrange -> give u1 and u2 equal balances
+    db.users.find((user) => user.id === 'u1').coinBalance = 1200
+    db.users.find((user) => user.id === 'u2').coinBalance = 1200
+
+    // act -> get the leaderboard with those balances
+    const res = await request.execute(app).get('/api/groups/g1/leaderboard')
+
+    // assert -> equal balances appear together in descending order
+    expect(res).to.have.status(200)
+    expect(res.body.map((member) => member.coinBalance)).to.deep.equal([
+      2300, 1200, 1200, 800
+    ])
+  })
+})
