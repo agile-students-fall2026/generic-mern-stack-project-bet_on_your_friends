@@ -268,4 +268,32 @@ router.post('/:groupId/leave', (req, res) => {
   res.json({ message: 'You left the group.' })
 })
 
+// leaderboard -> GET /api/groups/:groupId/leaderboard
+// Group members ordered by available coin balance. Highest shown first. 
+router.get('/:groupId/leaderboard', (req, res) => {
+  const group = findGroup(req.params.groupId)
+
+  if (!group) {
+    return res.status(404).json({ error: 'This group could not be found.' })
+  }
+
+  // Find the users whose IDs are in this group's member list.
+  const members = db.users.filter((user) => group.memberIds.includes(user.id))
+
+  // Put higher coin balances first. filter already made a new array.
+  const rankedMembers = members.sort((first, second) => {
+    return second.coinBalance - first.coinBalance
+  })
+
+  // Send only the account details needed on the leaderboard.
+  res.json(rankedMembers.map((member) => ({
+    id: member.id,
+    name: member.name,
+    displayName: member.displayName,
+    photoUrl: member.photoUrl,
+    coinBalance: member.coinBalance
+  })))
+})
+
+
 module.exports = router
