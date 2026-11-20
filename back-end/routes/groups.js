@@ -1,7 +1,7 @@
-// routes for creating, viewing, joining, and leaving groups -> /api/groups
+// routes for creating, viewing, updating, joining, and leaving groups -> /api/groups
 const express = require('express')
 const { randomInt, randomUUID } = require('crypto')
-const { db, isGroupFull } = require('../data')
+const { db, isGroupFull, isUploadedImage } = require('../data')
 
 const router = express.Router()
 
@@ -54,6 +54,7 @@ router.post('/', (req, res) => {
     whoCanInvite,
     memberLimit,
     photoSeed,
+    photoUrl,
     creatorId
   } = req.body ?? {}
 
@@ -113,6 +114,8 @@ router.post('/', (req, res) => {
     memberLimit: memberLimit,
     // random group picture if none was picked
     photoSeed: typeof photoSeed === 'string' && photoSeed !== '' ? photoSeed : randomUUID(),
+    // uploaded group picture
+    photoUrl: isUploadedImage(photoUrl) ? photoUrl : null,
     openPredictions: 0
   }
 
@@ -149,8 +152,33 @@ router.get('/:groupId', (req, res) => {
   res.json(group)
 })
 
+// change group picture -> PATCH /api/groups/:groupId with { userId, photoUrl }
+router.patch('/:groupId', (req, res) => {
+  const group = findGroup(req.params.groupId)
+
+  if (!group) {
+    return res.status(404).json({ error: 'This group could not be found.' })
+  }
+
+  // req.body is undefined when nothing was sent so fall back to an empty object
+  const { userId, photoUrl } = req.body ?? {}
+
+  // only admins can change group picture
+  if (!group.adminIds.includes(userId)) {
+    return res.status(403).json({ error: 'Only admins can change the group picture.' })
+  }
+
+  // group picture must be an image uploaded to /api/uploads
+  if (!isUploadedImage(photoUrl)) {
+    return res.status(400).json({ error: 'Please choose an image file.' })
+  }
+
+  group.photoUrl = photoUrl
+
+  res.json(group)
+})
+
 // group members -> GET /api/groups/:groupId/members
-// each member's id, name, and whether they're an admin
 router.get('/:groupId/members', (req, res) => {
   const group = findGroup(req.params.groupId)
 
@@ -164,6 +192,8 @@ router.get('/:groupId/members', (req, res) => {
     return {
       id: memberId,
       name: member?.displayName || member?.name || 'Unknown member',
+      // uploaded profile picture or null for random
+      photoUrl: member?.photoUrl ?? null,
       isAdmin: group.adminIds.includes(memberId)
     }
   })
