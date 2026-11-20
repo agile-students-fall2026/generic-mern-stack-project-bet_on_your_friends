@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import ConfirmModal from './ConfirmModal'
-import { getPredictionErrors, maxOutcomes, maxOutcomeLength } from '../services/mockPredictions'
+import {
+  getPredictionErrors, maxOutcomes, maxOutcomeLength, maxQuestionLength, maxStake
+} from '../services/mockPredictions'
 
 function inputStyle(hasError) {
   return `mt-2 w-full rounded-lg border p-3 ${hasError ? 'border-red-600' : 'border-gray-300'}`
@@ -37,7 +39,7 @@ function PredictionForm({ prediction, onSave, onCancel, error }) {
         <h2 className="text-3xl font-bold text-nyu-violet">{prediction ? 'Edit Prediction' : 'Create Prediction'}</h2>
         <label className="block font-medium">
           Question
-          <textarea required value={question} onChange={(event) => setQuestion(event.target.value)} className={inputStyle(question && errors.question)} />
+          <textarea required maxLength={maxQuestionLength} value={question} onChange={(event) => setQuestion(event.target.value)} className={inputStyle(question && errors.question)} />
           {question && errors.question && <span role="alert" className="mt-1 block text-sm text-red-600">{errors.question}</span>}
         </label>
         <fieldset className="space-y-3">
@@ -62,7 +64,7 @@ function PredictionForm({ prediction, onSave, onCancel, error }) {
         </fieldset>
         <label className="block font-medium">
           Coins per bet
-          <input type="number" min="1" step="1" required value={stake} onChange={(event) => setStake(event.target.value)} className={inputStyle(stake !== '' && errors.stake)} />
+          <input type="number" min="1" max={maxStake} step="1" required value={stake} onChange={(event) => setStake(event.target.value)} className={inputStyle(stake !== '' && errors.stake)} />
           {stake !== '' && errors.stake && <span role="alert" className="mt-1 block text-sm text-red-600">{errors.stake}</span>}
         </label>
         <label className="block font-medium">

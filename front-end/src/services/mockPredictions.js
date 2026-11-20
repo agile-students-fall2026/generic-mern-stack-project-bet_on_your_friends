@@ -6,6 +6,8 @@ const storageKey = 'betOnYourFriendsPredictions'
 const groupPredictions = JSON.parse(sessionStorage.getItem(storageKey) || '{}')
 export const maxOutcomes = 5
 export const maxOutcomeLength = 250
+export const maxQuestionLength = 250
+export const maxStake = 1000
 // Same limits in the comment form and when saving a comment.
 export const minCommentLength = 1
 export const maxCommentLength = 500
@@ -67,8 +69,9 @@ export function getPredictionErrors({ question, outcomes, deadline, stake }) {
   const errors = {}
   const cleanOutcomes = outcomes.map((outcome) => outcome.trim())
   if (!question.trim()) errors.question = 'Enter a question.'
-  if (!Number.isSafeInteger(Number(stake)) || Number(stake) < 1) {
-    errors.stake = 'Enter a positive whole number of coins.'
+  else if (question.length > maxQuestionLength) errors.question = 'Keep the question within 250 characters.'
+  if (!Number.isSafeInteger(Number(stake)) || Number(stake) < 1 || Number(stake) > maxStake) {
+    errors.stake = 'Enter a whole number of coins from 1 to 1,000.'
   }
   if (cleanOutcomes.length < 2 || cleanOutcomes.length > maxOutcomes || cleanOutcomes.some((outcome) => !outcome)) {
     errors.outcomes = 'Enter between two and five outcomes.'
