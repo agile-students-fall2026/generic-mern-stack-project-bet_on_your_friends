@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import { useAuth } from '../context/auth'
-import { apiRequest } from '../services/api'
+import { apiRequest, showFallbackPhoto } from '../services/api'
 import { isGroupFull } from '../services/mockGroups'
 
 function JoinGroup() {
@@ -91,7 +91,8 @@ function JoinGroup() {
 
           <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <img
-              src={`https://picsum.photos/seed/${group.photoSeed || group.id}/600/240`}
+              src={group.photoUrl || `https://picsum.photos/seed/${group.photoSeed || group.id}/600/240`}
+              onError={showFallbackPhoto(`https://picsum.photos/seed/${group.photoSeed || group.id}/600/240`)}
               alt=""
               className="h-32 w-full bg-nyu-lavender object-cover"
             />

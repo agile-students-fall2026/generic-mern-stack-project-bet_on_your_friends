@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
-import { apiRequest } from '../services/api'
-import { isGroupFull, updateMockGroupPhoto } from '../services/mockGroups'
+import { apiRequest, uploadImage, showFallbackPhoto } from '../services/api'
+import { isGroupFull } from '../services/mockGroups'
 
 function GroupMembers() {
   const { groupId } = useParams()
@@ -105,9 +105,14 @@ function GroupMembers() {
     setChangingPhoto(true)
 
     try {
-      const updatedGroup = await updateMockGroupPhoto(group.id, user.id, file)
+      // upload image, then save its URL as group picture
+      const uploadedUrl = await uploadImage(file)
+      const updatedGroup = await apiRequest(`/api/groups/${group.id}`, {
+        method: 'PATCH',
+        body: { userId: user.id, photoUrl: uploadedUrl }
+      })
 
-      setGroup({ ...updatedGroup })
+      setGroup(updatedGroup)
       setToastMessage('Group picture updated.')
     } catch (error) {
       setPhotoError(error.message)
@@ -176,7 +181,8 @@ function GroupMembers() {
         <>
           {/* group picture display */}
           <img
-            src={`https://picsum.photos/seed/${group.photoSeed || group.id}/600/240`}
+            src={group.photoUrl || `https://picsum.photos/seed/${group.photoSeed || group.id}/600/240`}
+            onError={showFallbackPhoto(`https://picsum.photos/seed/${group.photoSeed || group.id}/600/240`)}
             alt=""
             className="h-32 w-full rounded-xl bg-nyu-lavender object-cover shadow-sm"
           />
@@ -192,7 +198,7 @@ function GroupMembers() {
               {changingPhoto ? 'Changing group picture...' : 'Change group picture'}
               <input
                 type="file"
-                accept="image/*"
+                accept="image/png, image/jpeg"
                 className="sr-only"
                 disabled={changingPhoto}
                 onChange={handlePhotoChange}
@@ -222,10 +228,10 @@ function GroupMembers() {
                 >
                   <img
                     src={
-                      isYou && user.photoUrl
-                        ? user.photoUrl
-                        : `https://picsum.photos/seed/user-${member.id}/96/96`
+                      member.photoUrl ||
+                      `https://picsum.photos/seed/user-${member.id}/96/96`
                     }
+                    onError={showFallbackPhoto(`https://picsum.photos/seed/user-${member.id}/96/96`)}
                     alt=""
                     className="h-10 w-10 shrink-0 rounded-full bg-nyu-lavender object-cover"
                   />
