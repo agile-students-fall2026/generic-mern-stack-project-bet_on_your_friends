@@ -26,3 +26,10 @@ export function createPrediction(data, values) {
     method: 'POST', body: predictionBody(data, values)
   })
 }
+
+// submit the final outcome
+export function resolvePrediction(data, id, outcome) {
+  return apiRequest(`/api/predictions/${id}/resolve`, {
+    method: 'POST', body: { userId: data.currentUserId, outcome }
+  })
+}

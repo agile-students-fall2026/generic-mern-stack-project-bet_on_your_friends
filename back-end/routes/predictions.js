@@ -118,4 +118,49 @@ router.post('/groups/:groupId/predictions', (req, res) => {
   res.status(201).json(publicPrediction(prediction))
 })
 
+// resolve a prediction and update balances
+router.post('/predictions/:predictionId/resolve', (req, res) => {
+  const data = getMemberData(req, res)
+  if (!data) return
+  const { prediction, user } = data
+  const { outcome } = req.body ?? {}
+  if (prediction.creatorId !== user.id) {
+    return res.status(403).json({ error: 'Only the creator can resolve this prediction.' })
+  }
+  if (prediction.result) return res.status(400).json({ error: 'This prediction has already been resolved.' })
+  if (!prediction.outcomes.includes(outcome)) return res.status(400).json({ error: 'Choose the final outcome.' })
+
+  let pool = 0
+  let winningPool = 0
+  for (const bet of prediction.bets) {
+    pool += bet.amount
+    if (bet.outcome === outcome) winningPool += bet.amount
+  }
+  // refund bets if nobody chose the final outcome
+  if (winningPool === 0) {
+    for (const bet of prediction.bets) {
+      db.users.find((person) => person.id === bet.userId).coinBalance += bet.amount
+      bet.payout = bet.amount
+    }
+    prediction.refunded = pool > 0
+  } else {
+    const winners = prediction.bets.filter((bet) => bet.outcome === outcome)
+    let remaining = pool
+    winners.forEach((bet, index) => {
+      let payout = Math.floor(pool * bet.amount / winningPool)
+      // give the last winner any coins left from rounding
+      if (index === winners.length - 1) payout = remaining
+      db.users.find((person) => person.id === bet.userId).coinBalance += payout
+      bet.payout = payout
+      remaining -= payout
+    })
+  }
+  for (const bet of prediction.bets) {
+    if (bet.payout === undefined) bet.payout = 0
+  }
+  prediction.result = outcome
+  updateCount(data.group)
+  res.json({ prediction: publicPrediction(prediction), user: toPublicUser(user) })
+})
+
 module.exports = router
