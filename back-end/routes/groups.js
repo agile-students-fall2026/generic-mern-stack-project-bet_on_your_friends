@@ -1,7 +1,7 @@
-// routes for creating a group and viewing a group and its members -> /api/groups
+// routes for creating, viewing, updating, joining, and leaving groups -> /api/groups
 const express = require('express')
 const { randomInt, randomUUID } = require('crypto')
-const { db } = require('../data')
+const { db, isGroupFull, isUploadedImage } = require('../data')
 
 const router = express.Router()
 
@@ -23,6 +23,11 @@ const inviteCodeLength = 6
 // find a group by its id
 function findGroup(groupId) {
   return db.groups.find((group) => group.id === groupId)
+}
+
+// find a user by their id
+function findUser(userId) {
+  return db.users.find((user) => user.id === userId)
 }
 
 // randomly generated 6-character available invite code
@@ -49,10 +54,11 @@ router.post('/', (req, res) => {
     whoCanInvite,
     memberLimit,
     photoSeed,
+    photoUrl,
     creatorId
   } = req.body ?? {}
 
-  const creator = db.users.find((user) => user.id === creatorId)
+  const creator = findUser(creatorId)
 
   // group creator must have account
   if (!creator) {
@@ -108,12 +114,30 @@ router.post('/', (req, res) => {
     memberLimit: memberLimit,
     // random group picture if none was picked
     photoSeed: typeof photoSeed === 'string' && photoSeed !== '' ? photoSeed : randomUUID(),
+    // uploaded group picture
+    photoUrl: isUploadedImage(photoUrl) ? photoUrl : null,
     openPredictions: 0
   }
 
   db.groups.push(group)
 
   res.status(201).json(group)
+})
+
+// group from an invite link -> GET /api/groups/invite/:inviteCode
+router.get('/invite/:inviteCode', (req, res) => {
+  // invite codes are capital letters and numbers so lowercase codes still match
+  const inviteCode = req.params.inviteCode.toUpperCase()
+  const group = db.groups.find((match) => match.inviteCode === inviteCode)
+
+  // no matching group 404 error
+  if (!group) {
+    return res
+      .status(404)
+      .json({ error: 'This invite link is invalid or has expired.' })
+  }
+
+  res.json(group)
 })
 
 // group details -> GET /api/groups/:groupId
@@ -128,8 +152,33 @@ router.get('/:groupId', (req, res) => {
   res.json(group)
 })
 
+// change group picture -> PATCH /api/groups/:groupId with { userId, photoUrl }
+router.patch('/:groupId', (req, res) => {
+  const group = findGroup(req.params.groupId)
+
+  if (!group) {
+    return res.status(404).json({ error: 'This group could not be found.' })
+  }
+
+  // req.body is undefined when nothing was sent so fall back to an empty object
+  const { userId, photoUrl } = req.body ?? {}
+
+  // only admins can change group picture
+  if (!group.adminIds.includes(userId)) {
+    return res.status(403).json({ error: 'Only admins can change the group picture.' })
+  }
+
+  // group picture must be an image uploaded to /api/uploads
+  if (!isUploadedImage(photoUrl)) {
+    return res.status(400).json({ error: 'Please choose an image file.' })
+  }
+
+  group.photoUrl = photoUrl
+
+  res.json(group)
+})
+
 // group members -> GET /api/groups/:groupId/members
-// each member's id, name, and whether they're an admin
 router.get('/:groupId/members', (req, res) => {
   const group = findGroup(req.params.groupId)
 
@@ -138,16 +187,113 @@ router.get('/:groupId/members', (req, res) => {
   }
 
   const members = group.memberIds.map((memberId) => {
-    const member = db.users.find((user) => user.id === memberId)
+    const member = findUser(memberId)
 
     return {
       id: memberId,
       name: member?.displayName || member?.name || 'Unknown member',
+      // uploaded profile picture or null for random
+      photoUrl: member?.photoUrl ?? null,
       isAdmin: group.adminIds.includes(memberId)
     }
   })
 
   res.json(members)
 })
+
+// join group -> POST /api/groups/:groupId/join with { userId }
+router.post('/:groupId/join', (req, res) => {
+  const group = findGroup(req.params.groupId)
+
+  if (!group) {
+    return res.status(404).json({ error: 'This group could not be found.' })
+  }
+
+  // req.body is undefined when nothing was sent so fall back to an empty object
+  const { userId } = req.body ?? {}
+  const user = findUser(userId)
+
+  if (!user) {
+    return res.status(404).json({ error: 'This account does not exist.' })
+  }
+
+  // nothing to add if already a member
+  if (group.memberIds.includes(user.id)) {
+    return res.json(group)
+  }
+
+  // unable to join if member limit hit
+  if (isGroupFull(group)) {
+    return res
+      .status(400)
+      .json({ error: 'This group is full and cannot be joined.' })
+  }
+
+  group.memberIds.push(user.id)
+
+  res.json(group)
+})
+
+// leave group -> POST /api/groups/:groupId/leave with { userId }
+router.post('/:groupId/leave', (req, res) => {
+  const group = findGroup(req.params.groupId)
+
+  if (!group) {
+    return res.status(404).json({ error: 'This group could not be found.' })
+  }
+
+  // req.body is undefined when nothing was sent so fall back to an empty object
+  const { userId } = req.body ?? {}
+
+  // position of user in member list (-1 if not member)
+  const memIndex = group.memberIds.indexOf(userId)
+
+  // only members can leave a group
+  if (memIndex === -1) {
+    return res.status(400).json({ error: 'You are not a member of this group.' })
+  }
+
+  // remove user from group's members and admins
+  group.memberIds.splice(memIndex, 1)
+  group.adminIds = group.adminIds.filter((adminId) => adminId !== userId)
+
+  if (group.memberIds.length === 0) {
+    // no one left, so delete
+    db.groups.splice(db.groups.indexOf(group), 1)
+  } else if (group.adminIds.length === 0) {
+    // make next member admin if last admin leaves
+    group.adminIds.push(group.memberIds[0])
+  }
+
+  res.json({ message: 'You left the group.' })
+})
+
+// leaderboard -> GET /api/groups/:groupId/leaderboard
+// Group members ordered by available coin balance. Highest shown first. 
+router.get('/:groupId/leaderboard', (req, res) => {
+  const group = findGroup(req.params.groupId)
+
+  if (!group) {
+    return res.status(404).json({ error: 'This group could not be found.' })
+  }
+
+  // Find the users whose IDs are in this group's member list.
+  const members = db.users.filter((user) => group.memberIds.includes(user.id))
+
+  // Put higher coin balances first. filter already made a new array.
+  const rankedMembers = members.sort((first, second) => {
+    return second.coinBalance - first.coinBalance
+  })
+
+  // Send only the account details needed on the leaderboard.
+  res.json(rankedMembers.map((member) => ({
+    id: member.id,
+    name: member.name,
+    displayName: member.displayName,
+    photoUrl: member.photoUrl,
+    coinBalance: member.coinBalance
+  })))
+})
+
 
 module.exports = router

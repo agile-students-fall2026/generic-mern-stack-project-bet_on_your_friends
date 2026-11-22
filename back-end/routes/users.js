@@ -1,8 +1,12 @@
 // routes for /api/users -> a user's account settings and groups
 const express = require('express')
-const { db } = require('../data')
+const { db, toPublicUser, isUploadedImage } = require('../data')
 
 const router = express.Router()
+
+// display name length limits
+const minDisplayNameLength = 3
+const maxDisplayNameLength = 30
 
 // password requirements: 8-64 characters, uppercase, lowercase, & a number
 // returns the first rule the password breaks or null
@@ -27,6 +31,49 @@ function passwordRuleError(password) {
   // all requirements were met 
   return null
 }
+
+// profile settings -> PATCH /api/users/:userId with { displayName } and/or { photoUrl }
+router.patch('/:userId', (req, res) => {
+  const user = db.users.find((account) => account.id === req.params.userId)
+
+  // no account with this id
+  if (!user) {
+    return res.status(404).json({ error: 'This account does not exist.' })
+  }
+
+  // req.body is undefined when nothing was sent so fall back to an empty object
+  const { displayName, photoUrl } = req.body ?? {}
+
+  // check every field before saving
+  if (displayName !== undefined) {
+    // spaces don't count toward minimum
+    if (
+      typeof displayName !== 'string' ||
+      displayName.replace(/\s/g, '').length < minDisplayNameLength
+    ) {
+      return res.status(400).json({
+        error: `Display name must be at least ${minDisplayNameLength} characters.`
+      })
+    }
+
+    if (displayName.trim().length > maxDisplayNameLength) {
+      return res.status(400).json({
+        error: `Display name must be ${maxDisplayNameLength} characters or less.`
+      })
+    }
+  }
+
+  // profile picture must be an image uploaded to /api/uploads
+  if (photoUrl !== undefined && !isUploadedImage(photoUrl)) {
+    return res.status(400).json({ error: 'Please choose an image file.' })
+  }
+
+  if (displayName !== undefined) user.displayName = displayName.trim()
+  if (photoUrl !== undefined) user.photoUrl = photoUrl
+
+  // send back updated user without their password
+  res.json(toPublicUser(user))
+})
 
 // change password -> PATCH /api/users/:userId/password
 router.patch('/:userId/password', (req, res) => {
