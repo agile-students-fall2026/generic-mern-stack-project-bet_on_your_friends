@@ -8,10 +8,18 @@ function inputStyle(hasError) {
   return `mt-2 w-full rounded-lg border p-3 ${hasError ? 'border-red-600' : 'border-gray-300'}`
 }
 
+// convert the saved deadline for the local date input
+function localDeadline(deadline) {
+  if (!deadline) return ''
+  const date = new Date(deadline)
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+  return date.toISOString().slice(0, 16)
+}
+
 function PredictionForm({ prediction, onSave, onCancel, error }) {
   const [question, setQuestion] = useState(prediction ? prediction.question : '')
   const [outcomes, setOutcomes] = useState(prediction ? [...prediction.outcomes] : ['', ''])
-  const [deadline, setDeadline] = useState(prediction ? prediction.deadline : '')
+  const [deadline, setDeadline] = useState(localDeadline(prediction?.deadline))
   const [stake, setStake] = useState(prediction?.stake ?? '')
   const [saving, setSaving] = useState(false)
   const [removeIndex, setRemoveIndex] = useState(null)
@@ -25,6 +33,7 @@ function PredictionForm({ prediction, onSave, onCancel, error }) {
     setOutcomes(updated)
   }
 
+  // wait for the server before allowing another submission
   async function handleSubmit(event) {
     event.preventDefault()
     if (!formValid) return

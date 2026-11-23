@@ -21,7 +21,7 @@ Other students voted for his project in class, and we all got placed in the same
 
 ## Contributing
 
-All team members follow a feature branch workflow. Changes are developed on separate branches, submitted through Pull Requests, and reviewed by another team member. Once approved, the author of the Pull Request is responsible for merging it into the `master` branch.
+All team members follow a feature branch workflow. Changes are developed on separate branches, submitted through Pull Requests, and reviewed by another team member. Once approved, the reviewer of the Pull Request is responsible for merging it into the `master` branch.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and development instructions.
 
@@ -44,9 +44,11 @@ npm install
 npm run dev
 ```
 
-This will open up localhost:3000. More testing details TBD.
+This will open up localhost:3000. Keep both servers running.
 
-You can also test changes before creating a PR:
+In `back-end`, run `npm test` for the tests or `npm run coverage` for the coverage report.
+
+In `front-end`, check the build and lint before creating a PR:
 
 ```
 npm run build
