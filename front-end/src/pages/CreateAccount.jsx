@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/auth'
-import { isEmailRegistered, registerMockAccount } from '../services/mockSignUp'
+import { apiRequest } from '../services/api'
 
 // form input stlying -> rounded boxes
 const inputStyle =
@@ -57,6 +57,7 @@ function CreateAccount() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [emailError, setEmailError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
 
   // name must be 3-30 characters, not counting spaces
@@ -81,19 +82,15 @@ function CreateAccount() {
   // check if email has a valid format
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 
-  // check whether the email is already registered
-  const emailAlreadyRegistered =
-  email.trim() !== '' && isEmailRegistered(email)
-
   // submission is only allowed when ALL fields are valid
   const formValid =
     nameMinValid &&
     nameMaxValid &&
     emailValid &&
-    !emailAlreadyRegistered &&
     oldEnough &&
     passwordValid &&
-    passwordsMatch
+    passwordsMatch &&
+    !submitting
 
 
 // runs when the user submits the form
@@ -103,23 +100,39 @@ async function handleSubmit(event) {
   if (!formValid) return
 
   setEmailError('')
+  setSubmitting(true)
 
   try {
-    // register the account and get the new user
-    const user = await registerMockAccount({ name, email })
+      // send new account information to back-end
+      // back-end is responsible for verifying that all fields are valid
+      const user = await apiRequest('/api/auth/signup', {
+        method: 'POST',
+        body: {
+          name,
+          email,
+          dateOfBirth,
+          password,
+          confirmPassword
+        }
+      })
 
-    // log the new user for every page to access
-    logIn(user)
+      // log new user in for every page to access
+      // same user ID that the back-end now has in db.users
+      logIn(user)
 
-    // redirect to My Groups after successful registration
-    navigate('/groups', {
-      state: { signupCompleted: true, user: user },
-    })
-  } catch (error) {
-    // display an error if registration fails
-    setEmailError(error.message)
+      // redirect to My Groups after successful registration
+      navigate('/groups', {
+        state: { signupCompleted: true, user: user },
+      })
+    } catch (error) {
+      // display an error if registration fails
+      // e.g. the email already exists or the back-end could not be reached
+      setEmailError(error.message)
+    } finally {
+      // re-enable the submit button if we are still on this page
+      setSubmitting(false)
+    }
   }
-}
 
   return (
     <main className="min-h-screen bg-[#f8f5fb] px-4 py-8">
@@ -190,16 +203,9 @@ async function handleSubmit(event) {
                 Please enter a valid email address.
               </span>
             )}
-            
-            {/* error if email is already registered */}
-            {emailAlreadyRegistered && (
-              <span className="mt-1 block text-sm text-red-600" role="alert">
-                This email is already associated with an account.
-              </span>
-            )}
 
             {/* error if registration fails */}
-            {emailError && !emailAlreadyRegistered && (
+            {emailError && (
               <span className="mt-1 block text-sm text-red-600" role="alert">
                 {emailError}
               </span>
@@ -278,7 +284,7 @@ async function handleSubmit(event) {
             disabled={!formValid}
             className="w-full rounded-lg bg-nyu-violet p-3 font-semibold text-white hover:bg-nyu-ultraviolet disabled:cursor-not-allowed disabled:bg-gray-300"
           >
-            Create Account
+            {submitting ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 
