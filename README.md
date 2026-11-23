@@ -32,7 +32,7 @@ The front-end and back-end must both run at the same time for the app to work, b
 **Terminal 1 - Back-end (localhost:3000):**
 
 ```
-cd front-end
+cd back-end
 npm install
 npm run dev
 ```
@@ -40,7 +40,7 @@ npm run dev
 **Terminal 2 - Front-end (localhost:5173):**
 
 ```
-cd back-end
+cd front-end
 npm install
 npm run dev
 ```
