@@ -102,6 +102,38 @@ router.get('/predictions/:predictionId', (req, res) => {
   res.json(publicPrediction(data.prediction))
 })
 
+// post a comment on a prediction
+router.post('/predictions/:predictionId/comments', (req, res) => {
+  const data = getMemberData(req, res)
+  if (!data) return
+
+  const { text } = req.body ?? {}
+
+  // A comment cannot be empty or contain only spaces.
+  if (typeof text !== 'string' || !text.trim()) {
+    return res.status(400).json({
+      error: 'Write at least one character before sending.'
+    })
+  }
+
+  // Match the 500-character limit already used by the comment form.
+  if (text.length > 500) {
+    return res.status(400).json({
+      error: 'Keep your comment within 500 characters.'
+    })
+  }
+
+  const comment = {
+    id: randomUUID(),
+    userId: data.user.id,
+    text: text.trim(),
+    createdAt: new Date().toISOString()
+  }
+  
+  data.prediction.comments.push(comment)
+  res.status(201).json(comment)
+})
+
 // create a prediction
 router.post('/groups/:groupId/predictions', (req, res) => {
   const data = getMemberData(req, res)
