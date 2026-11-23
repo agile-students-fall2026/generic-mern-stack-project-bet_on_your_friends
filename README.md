@@ -37,7 +37,7 @@ npm install
 npm run dev
 ```
 
-**Terminal 1 - Front-end (localhost:5173):**
+**Terminal 2 - Front-end (localhost:5173):**
 
 ```
 cd back-end
