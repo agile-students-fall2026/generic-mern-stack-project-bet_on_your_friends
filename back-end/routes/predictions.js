@@ -62,6 +62,14 @@ function predictionError(values) {
   return ''
 }
 
+// only the creator can change a prediction before bets are placed
+function editError(prediction, user) {
+  if (prediction.creatorId !== user.id) return 'Only the creator can change this prediction.'
+  if (prediction.result) return 'Resolved predictions cannot be changed.'
+  if (prediction.bets.length > 0) return 'This prediction cannot be changed after someone bets.'
+  return ''
+}
+
 // count unresolved predictions whose deadlines have not passed
 function updateCount(group) {
   group.openPredictions = db.predictions.filter((prediction) =>
@@ -116,6 +124,34 @@ router.post('/groups/:groupId/predictions', (req, res) => {
   db.predictions.push(prediction)
   updateCount(data.group)
   res.status(201).json(publicPrediction(prediction))
+})
+
+// edit a prediction
+router.post('/predictions/:predictionId', (req, res) => {
+  const data = getMemberData(req, res)
+  if (!data) return
+  const error = editError(data.prediction, data.user)
+  if (error) return res.status(403).json({ error })
+  const formError = predictionError(req.body)
+  if (formError) return res.status(400).json({ error: formError })
+  const { question, outcomes, deadline, stake } = req.body
+  data.prediction.question = question.trim()
+  data.prediction.outcomes = outcomes.map((outcome) => outcome.trim())
+  data.prediction.deadline = new Date(deadline).toISOString()
+  data.prediction.stake = stake
+  updateCount(data.group)
+  res.json(publicPrediction(data.prediction))
+})
+
+// delete a prediction
+router.delete('/predictions/:predictionId', (req, res) => {
+  const data = getMemberData(req, res)
+  if (!data) return
+  const error = editError(data.prediction, data.user)
+  if (error) return res.status(403).json({ error })
+  db.predictions = db.predictions.filter((prediction) => prediction.id !== data.prediction.id)
+  updateCount(data.group)
+  res.json({ message: 'Prediction deleted.' })
 })
 
 // place a bet
