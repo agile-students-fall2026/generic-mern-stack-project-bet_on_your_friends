@@ -26,3 +26,10 @@ export function createPrediction(data, values) {
     method: 'POST', body: predictionBody(data, values)
   })
 }
+
+// submit the chosen outcome and coins
+export function placeBet(data, id, outcome, amount) {
+  return apiRequest(`/api/predictions/${id}/bets`, {
+    method: 'POST', body: { userId: data.currentUserId, outcome, amount }
+  })
+}
