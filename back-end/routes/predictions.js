@@ -163,4 +163,37 @@ router.post('/predictions/:predictionId/resolve', (req, res) => {
   res.json({ prediction: publicPrediction(prediction), user: toPublicUser(user) })
 })
 
+// place a bet
+router.post('/predictions/:predictionId/bets', (req, res) => {
+  const data = getMemberData(req, res)
+  if (!data) return
+  const { prediction, user } = data
+  const { outcome, amount } = req.body ?? {}
+  if (prediction.result || new Date(prediction.deadline) <= new Date()) {
+    return res.status(400).json({ error: 'Betting is closed.' })
+  }
+  if (prediction.creatorId === user.id) {
+    return res.status(403).json({ error: 'You cannot bet on your own prediction.' })
+  }
+  if (prediction.bets.some((bet) => bet.userId === user.id)) {
+    return res.status(400).json({ error: 'You can only bet once on each prediction.' })
+  }
+  if (!prediction.outcomes.includes(outcome)) {
+    return res.status(400).json({ error: 'Choose an outcome.' })
+  }
+  if (!Number.isSafeInteger(amount) || amount < 1) {
+    return res.status(400).json({ error: 'Bet at least one whole coin.' })
+  }
+  if (amount !== prediction.stake) {
+    return res.status(400).json({ error: `This prediction requires a bet of ${prediction.stake} coins.` })
+  }
+  if (amount > user.coinBalance) {
+    return res.status(400).json({ error: 'You do not have enough coins.' })
+  }
+  // deduct coins after all checks pass
+  user.coinBalance -= amount
+  prediction.bets.push({ userId: user.id, outcome, amount, placedAt: new Date().toISOString() })
+  res.json({ prediction: publicPrediction(prediction), user: toPublicUser(user) })
+})
+
 module.exports = router
