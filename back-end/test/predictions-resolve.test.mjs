@@ -23,14 +23,14 @@ describe('Resolving predictions', () => {
   beforeEach(() => resetData())
 
   it('pays winners without losing coins to rounding', async () => {
-    // Arrange
+    // Arrange: record two Yes bets and one No bet, each for 25 coins.
     const total = db.users.reduce((sum, user) => sum + user.coinBalance, 0)
     addBet('u1', 'Yes')
     addBet('u3', 'Yes')
     addBet('u4', 'No')
-    // Act
+    // Act: the creator resolves p1 as Yes.
     const res = await resolve()
-    // Assert
+    // Assert: split the full pot between winners and leave two predictions open.
     expect(res).to.have.status(200)
     expect(res.body.prediction.result).to.equal('Yes')
     expect(res.body.prediction.bets.map((item) => item.payout)).to.deep.equal([37, 38, 0])
@@ -42,11 +42,11 @@ describe('Resolving predictions', () => {
   })
 
   it('refunds bets when nobody chose the final outcome', async () => {
-    // Arrange
+    // Arrange: record one 25-coin bet on Yes.
     addBet()
-    // Act
+    // Act: the creator resolves p1 as No.
     const res = await resolve('No')
-    // Assert
+    // Assert: refund the bet and restore the user's balance.
     expect(res).to.have.status(200)
     expect(res.body.prediction.refunded).to.equal(true)
     expect(res.body.prediction.bets[0].payout).to.equal(25)
@@ -54,32 +54,32 @@ describe('Resolving predictions', () => {
   })
 
   it('rejects another resolver, invalid outcomes, and repeat resolution', async () => {
-    // Arrange
+    // Arrange: record a bet and save the current data.
     addBet()
     const saved = JSON.stringify(db)
-    // Act
+    // Act: try another user, then an outcome that does not exist.
     const otherUser = await resolve('Yes', 'u1')
     const invalid = await resolve('Missing')
-    // Assert
+    // Assert: reject both requests without changing the data.
     expect(otherUser).to.have.status(403)
     expect(invalid).to.have.status(400)
     expect(JSON.stringify(db)).to.equal(saved)
 
-    // Arrange
+    // Arrange: resolve p1 and save the updated data.
     await resolve()
     const resolved = JSON.stringify(db)
-    // Act
+    // Act: try to resolve p1 again.
     const repeated = await resolve()
-    // Assert
+    // Assert: reject the repeat request without changing the data.
     expect(repeated).to.have.status(400)
     expect(JSON.stringify(db)).to.equal(resolved)
   })
 
   it('allows resolution without bets', async () => {
     // Arrange: p1 has no bets.
-    // Act
+    // Act: the creator resolves p1 as Yes.
     const res = await resolve()
-    // Assert
+    // Assert: accept the result with no bets and leave two predictions open.
     expect(res).to.have.status(200)
     expect(res.body.prediction.bets).to.deep.equal([])
     expect(db.groups[0].openPredictions).to.equal(2)
