@@ -41,6 +41,13 @@ export function deletePrediction(data, id) {
   })
 }
 
+// submit the final outcome
+export function resolvePrediction(data, id, outcome) {
+  return apiRequest(`/api/predictions/${id}/resolve`, {
+    method: 'POST', body: { userId: data.currentUserId, outcome }
+  })
+}
+
 // submit the chosen outcome and coins
 export function placeBet(data, id, outcome, amount) {
   return apiRequest(`/api/predictions/${id}/bets`, {
