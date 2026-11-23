@@ -26,3 +26,31 @@ export function createPrediction(data, values) {
     method: 'POST', body: predictionBody(data, values)
   })
 }
+
+// save changes to a prediction
+export function editPrediction(data, id, values) {
+  return apiRequest(`/api/predictions/${id}`, {
+    method: 'POST', body: predictionBody(data, values)
+  })
+}
+
+// delete a prediction as its creator
+export function deletePrediction(data, id) {
+  return apiRequest(`/api/predictions/${id}`, {
+    method: 'DELETE', body: { userId: data.currentUserId }
+  })
+}
+
+// submit the final outcome
+export function resolvePrediction(data, id, outcome) {
+  return apiRequest(`/api/predictions/${id}/resolve`, {
+    method: 'POST', body: { userId: data.currentUserId, outcome }
+  })
+}
+
+// submit the chosen outcome and coins
+export function placeBet(data, id, outcome, amount) {
+  return apiRequest(`/api/predictions/${id}/bets`, {
+    method: 'POST', body: { userId: data.currentUserId, outcome, amount }
+  })
+}

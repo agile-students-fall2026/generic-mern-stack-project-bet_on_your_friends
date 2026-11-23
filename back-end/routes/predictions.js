@@ -62,6 +62,14 @@ function predictionError(values) {
   return ''
 }
 
+// only the creator can change a prediction before bets are placed
+function editError(prediction, user) {
+  if (prediction.creatorId !== user.id) return 'Only the creator can change this prediction.'
+  if (prediction.result) return 'Resolved predictions cannot be changed.'
+  if (prediction.bets.length > 0) return 'This prediction cannot be changed after someone bets.'
+  return ''
+}
+
 // count unresolved predictions whose deadlines have not passed
 function updateCount(group) {
   group.openPredictions = db.predictions.filter((prediction) =>
@@ -116,6 +124,112 @@ router.post('/groups/:groupId/predictions', (req, res) => {
   db.predictions.push(prediction)
   updateCount(data.group)
   res.status(201).json(publicPrediction(prediction))
+})
+
+// edit a prediction
+router.post('/predictions/:predictionId', (req, res) => {
+  const data = getMemberData(req, res)
+  if (!data) return
+  const error = editError(data.prediction, data.user)
+  if (error) return res.status(403).json({ error })
+  const formError = predictionError(req.body)
+  if (formError) return res.status(400).json({ error: formError })
+  const { question, outcomes, deadline, stake } = req.body
+  data.prediction.question = question.trim()
+  data.prediction.outcomes = outcomes.map((outcome) => outcome.trim())
+  data.prediction.deadline = new Date(deadline).toISOString()
+  data.prediction.stake = stake
+  updateCount(data.group)
+  res.json(publicPrediction(data.prediction))
+})
+
+// delete a prediction
+router.delete('/predictions/:predictionId', (req, res) => {
+  const data = getMemberData(req, res)
+  if (!data) return
+  const error = editError(data.prediction, data.user)
+  if (error) return res.status(403).json({ error })
+  db.predictions = db.predictions.filter((prediction) => prediction.id !== data.prediction.id)
+  updateCount(data.group)
+  res.json({ message: 'Prediction deleted.' })
+})
+
+// resolve a prediction and update balances
+router.post('/predictions/:predictionId/resolve', (req, res) => {
+  const data = getMemberData(req, res)
+  if (!data) return
+  const { prediction, user } = data
+  const { outcome } = req.body ?? {}
+  if (prediction.creatorId !== user.id) {
+    return res.status(403).json({ error: 'Only the creator can resolve this prediction.' })
+  }
+  if (prediction.result) return res.status(400).json({ error: 'This prediction has already been resolved.' })
+  if (!prediction.outcomes.includes(outcome)) return res.status(400).json({ error: 'Choose the final outcome.' })
+
+  let pool = 0
+  let winningPool = 0
+  for (const bet of prediction.bets) {
+    pool += bet.amount
+    if (bet.outcome === outcome) winningPool += bet.amount
+  }
+  // refund bets if nobody chose the final outcome
+  if (winningPool === 0) {
+    for (const bet of prediction.bets) {
+      db.users.find((person) => person.id === bet.userId).coinBalance += bet.amount
+      bet.payout = bet.amount
+    }
+    prediction.refunded = pool > 0
+  } else {
+    const winners = prediction.bets.filter((bet) => bet.outcome === outcome)
+    let remaining = pool
+    winners.forEach((bet, index) => {
+      let payout = Math.floor(pool * bet.amount / winningPool)
+      // give the last winner any coins left from rounding
+      if (index === winners.length - 1) payout = remaining
+      db.users.find((person) => person.id === bet.userId).coinBalance += payout
+      bet.payout = payout
+      remaining -= payout
+    })
+  }
+  for (const bet of prediction.bets) {
+    if (bet.payout === undefined) bet.payout = 0
+  }
+  prediction.result = outcome
+  updateCount(data.group)
+  res.json({ prediction: publicPrediction(prediction), user: toPublicUser(user) })
+})
+
+// place a bet
+router.post('/predictions/:predictionId/bets', (req, res) => {
+  const data = getMemberData(req, res)
+  if (!data) return
+  const { prediction, user } = data
+  const { outcome, amount } = req.body ?? {}
+  if (prediction.result || new Date(prediction.deadline) <= new Date()) {
+    return res.status(400).json({ error: 'Betting is closed.' })
+  }
+  if (prediction.creatorId === user.id) {
+    return res.status(403).json({ error: 'You cannot bet on your own prediction.' })
+  }
+  if (prediction.bets.some((bet) => bet.userId === user.id)) {
+    return res.status(400).json({ error: 'You can only bet once on each prediction.' })
+  }
+  if (!prediction.outcomes.includes(outcome)) {
+    return res.status(400).json({ error: 'Choose an outcome.' })
+  }
+  if (!Number.isSafeInteger(amount) || amount < 1) {
+    return res.status(400).json({ error: 'Bet at least one whole coin.' })
+  }
+  if (amount !== prediction.stake) {
+    return res.status(400).json({ error: `This prediction requires a bet of ${prediction.stake} coins.` })
+  }
+  if (amount > user.coinBalance) {
+    return res.status(400).json({ error: 'You do not have enough coins.' })
+  }
+  // deduct coins after all checks pass
+  user.coinBalance -= amount
+  prediction.bets.push({ userId: user.id, outcome, amount, placedAt: new Date().toISOString() })
+  res.json({ prediction: publicPrediction(prediction), user: toPublicUser(user) })
 })
 
 module.exports = router
