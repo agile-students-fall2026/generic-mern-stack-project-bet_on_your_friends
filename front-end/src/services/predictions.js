@@ -54,3 +54,14 @@ export function placeBet(data, id, outcome, amount) {
     method: 'POST', body: { userId: data.currentUserId, outcome, amount }
   })
 }
+
+// Send a comment to the backend for the selected prediction.
+export function addComment(data, predictionId, text) {
+  return apiRequest(`/api/predictions/${predictionId}/comments`, {
+    method: 'POST',
+    body: {
+      userId: data.currentUserId,
+      text
+    }
+  })
+}

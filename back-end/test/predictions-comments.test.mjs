@@ -44,4 +44,69 @@ describe('POST /api/predictions/:predictionId/comments', () => {
     expect(db.predictions.find((item) => item.id === 'p1').comments)
       .to.deep.include(posted.body)
   })
+  it('rejects a comment containing only spaces', async () => {
+    // arrange -> spaces alone should not count as a comment
+    const body = { userId: 'u1', text: '   ' }
+
+    // act -> try to post the comment
+    const res = await request.execute(app)
+      .post('/api/predictions/p1/comments')
+      .send(body)
+
+    // assert -> the request fails and no comment is saved
+    expect(res).to.have.status(400)
+    expect(res.body.error).to.equal(
+      'Write at least one character before sending.'
+    )
+    expect(db.predictions.find((item) => item.id === 'p1').comments)
+      .to.be.empty
+  })
+
+  it('rejects a comment longer than 500 characters', async () => {
+    // arrange -> the comment is one character over the limit
+    const body = { userId: 'u1', text: 'a'.repeat(501) }
+
+    // act -> try to post the comment
+    const res = await request.execute(app)
+      .post('/api/predictions/p1/comments')
+      .send(body)
+
+    // assert -> the request fails and no comment is saved
+    expect(res).to.have.status(400)
+    expect(res.body.error).to.equal(
+      'Keep your comment within 500 characters.'
+    )
+    expect(db.predictions.find((item) => item.id === 'p1').comments)
+      .to.be.empty
+  })
+
+  it('rejects a comment from someone outside the group', async () => {
+    // arrange -> u5 does not belong to the group containing p1
+    const body = { userId: 'u5', text: 'Hello!' }
+
+    // act -> u5 tries to comment on p1
+    const res = await request.execute(app)
+      .post('/api/predictions/p1/comments')
+      .send(body)
+
+    // assert -> a nonmember cannot add a comment
+    expect(res).to.have.status(403)
+    expect(res.body.error).to.equal('You must belong to this group.')
+    expect(db.predictions.find((item) => item.id === 'p1').comments)
+      .to.be.empty
+  })
+
+  it('returns a 404 when the prediction does not exist', async () => {
+    // arrange -> this prediction ID is not in the mock data
+    const body = { userId: 'u1', text: 'Hello!' }
+
+    // act -> try to comment on the missing prediction
+    const res = await request.execute(app)
+      .post('/api/predictions/not-a-prediction/comments')
+      .send(body)
+
+    // assert -> the route reports that the prediction was not found
+    expect(res).to.have.status(404)
+    expect(res.body.error).to.equal('Prediction not found.')
+  })
 })
