@@ -84,8 +84,8 @@ Install the following tools:
 ### Clone the Repository
 
 ```
-git clone https://github.com/agile-students-fall2026/bet-on-your-friends.git
-cd bet-on-your-friends
+git clone https://github.com/agile-students-fall2026/generic-mern-stack-project-bet_on_your_friends.git
+cd generic-mern-stack-project-bet_on_your_friends
 ```
 
 Ensure your local `master` branch is up to date:
@@ -130,9 +130,11 @@ Example Pull Request:
 ![Example pull request #7 screenshot of description, showing reviewers, assignees, labels, projects, issue attached, and PR description](images/Example%20PR.jpg)
 
 
-## Building and Testing
+## Building & Testing
 
-For the front-end, run:
+The front-end and back-end must both run at the same time for the app to work, because the front-end sends API requests to the Express back-end.
+
+**Terminal 1 - Back-end (localhost:3000):**
 
 ```
 cd front-end
@@ -140,9 +142,7 @@ npm install
 npm run dev
 ```
 
-This will open up localhost:5173. On localhost, you should manually test any pages or features that were changed to make sure everything works as expected.
-
-For the back-end, run:
+**Terminal 1 - Front-end (localhost:5173):**
 
 ```
 cd back-end
@@ -150,16 +150,23 @@ npm install
 npm run dev
 ```
 
-This will open up localhost:3000. More testing details TBD.
-
-You can also test changes before creating a PR:
+**Back-end testing**:
 
 ```
+cd back-end/
+npm test
+npm run coverage
+```
+
+**Front-end checks**:
+
+```
+cd front-end/
 npm run build
 npm run lint
 ```
 
-If you made your changes correctly, running both commands should result in 0 errors (hopefully...)
+If you made your changes correctly, running all of these commands should result in 0 errors (hopefully...)
 
 ## Communication
 

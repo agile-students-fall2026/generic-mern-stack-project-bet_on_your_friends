@@ -27,16 +27,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and developme
 
 ## Building & Testing
 
-For the front-end, run:
+The front-end and back-end must both run at the same time for the app to work, because the front-end sends API requests to the Express back-end.
+
+**Terminal 1 - Back-end (localhost:3000):**
 
 ```
 cd front-end
 npm install
 npm run dev
 ```
-This will open up localhost:5173. On localhost, you should manually test any pages or features that were changed to make sure everything works as expected.
 
-For the back-end, run:
+**Terminal 1 - Front-end (localhost:5173):**
 
 ```
 cd back-end
@@ -44,18 +45,23 @@ npm install
 npm run dev
 ```
 
-This will open up localhost:3000. Keep both servers running.
-
-In `back-end`, run `npm test` for the tests or `npm run coverage` for the coverage report.
-
-In `front-end`, check the build and lint before creating a PR:
+**Back-end testing**:
 
 ```
+cd back-end/
+npm test
+npm run coverage
+```
+
+**Front-end checks**:
+
+```
+cd front-end/
 npm run build
 npm run lint
 ```
 
-If you made your changes correctly, running both commands should result in 0 errors (hopefully...)
+If you made your changes correctly, running all of these commands should result in 0 errors (hopefully...)
 
 ## Resources
 
