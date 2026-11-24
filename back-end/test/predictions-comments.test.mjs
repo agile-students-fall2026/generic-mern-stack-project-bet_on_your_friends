@@ -109,4 +109,34 @@ describe('POST /api/predictions/:predictionId/comments', () => {
     expect(res).to.have.status(404)
     expect(res.body.error).to.equal('Prediction not found.')
   })
+    it('keeps the discussion available after a prediction is resolved', async () => {
+    // arrange -> u1 posts a comment on p1 before it has a final outcome
+    const before = await request.execute(app)
+      .post('/api/predictions/p1/comments')
+      .send({ userId: 'u1', text: 'I think the answer is Yes.' })
+    expect(before).to.have.status(201)
+
+    // u2 created p1 and resolves it with Yes as the final outcome.
+    const resolved = await request.execute(app)
+      .post('/api/predictions/p1/resolve')
+      .send({ userId: 'u2', outcome: 'Yes' })
+    expect(resolved).to.have.status(200)
+
+    // act -> u3 posts another comment on p1 after it is resolved
+    const after = await request.execute(app)
+      .post('/api/predictions/p1/comments')
+      .send({ userId: 'u3', text: 'Good call!' })
+
+    // u4 opens p1 to read the result and the discussion.
+    const loaded = await request.execute(app)
+      .get('/api/predictions/p1?userId=u4')
+
+    // assert -> p1 accepts the new comment and keeps its final outcome
+    expect(after).to.have.status(201)
+    expect(loaded).to.have.status(200)
+    expect(loaded.body.result).to.equal('Yes')
+
+    // Both comments are returned in posting order.
+    expect(loaded.body.comments).to.deep.equal([before.body, after.body])
+  })
 })
