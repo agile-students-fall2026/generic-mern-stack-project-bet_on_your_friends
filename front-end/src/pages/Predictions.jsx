@@ -23,6 +23,7 @@ function Predictions() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [filter, setFilter] = useState('All predictions')
+  const [now, setNow] = useState(() => Date.now())
   const [showBettors, setShowBettors] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -48,6 +49,12 @@ function Predictions() {
     setData({ ...result })
     logIn({ ...result.users.find((person) => person.id === account.id) })
   }
+
+  // Check for deadlines that pass while the group page is open.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   // load this group and ignore responses after leaving the page
   useEffect(() => {
@@ -145,7 +152,18 @@ function Predictions() {
   }
 
   const user = data.users.find((person) => person.id === data.currentUserId)
-  const selected = data.predictions.find((prediction) => prediction.id === selectedId)
+
+  // Update the displayed status when a prediction's deadline passes.
+  const predictions = data.predictions.map((prediction) => {
+    const deadline = new Date(prediction.deadline).getTime()
+
+    return {
+      ...prediction,
+      bettingClosed: prediction.bettingClosed || deadline <= now
+    }
+  })
+
+  const selected = predictions.find((prediction) => prediction.id === selectedId)
   const creator = selected && data.users.find((person) => person.id === selected.creatorId)
   const isCreator = selected && selected.creatorId === user.id
   const userBet = selected && selected.bets.find((bet) => bet.userId === user.id)
@@ -154,7 +172,7 @@ function Predictions() {
   const canBet = Number.isSafeInteger(coinsToBet) && coinsToBet > 0 && coinsToBet <= user.coinBalance
 
 // filter the list without changing the saved predictions
-const filteredPredictions = data.predictions.filter((prediction) => {
+const filteredPredictions = predictions.filter((prediction) => {
   if (filter === 'Resolved') {
     return Boolean(prediction.result)
   }
