@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { getDisplayName, useAuth } from '../context/auth'
-import { addMockComment, minCommentLength, maxCommentLength} from '../services/mockPredictions'
+import { addComment } from '../services/predictions'
+
+// comment length limits
+const minCommentLength = 1
+const maxCommentLength = 500
 
 // shows a prediction's comments and lets members post a reply
 function PredictionComments({ data, prediction, onUpdate }) {
@@ -29,10 +33,10 @@ function PredictionComments({ data, prediction, onUpdate }) {
 
     try {
       // clear the draft only after saving succeeds
-      await addMockComment(data, prediction.id, draft)
+      await addComment(data, prediction.id, draft)
+      await onUpdate()
       setDraft('')
       setEditing(false)
-      onUpdate()
     } catch (problem) {
       setError(problem.message)
     } finally {

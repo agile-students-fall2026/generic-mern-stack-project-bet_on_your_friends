@@ -291,10 +291,7 @@ const filteredPredictions = data.predictions.filter((prediction) => {
               key={selected.id}
               data={data}
               prediction={selected}
-              onUpdate={() => {
-                // Saved the comment. Update state so it appears on screen.
-                setData({ ...data })
-              }}
+              onUpdate={loadData}
             />
           </section>
         ) : (
