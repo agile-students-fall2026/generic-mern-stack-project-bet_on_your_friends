@@ -54,3 +54,8 @@ export function placeBet(data, id, outcome, amount) {
     method: 'POST', body: { userId: data.currentUserId, outcome, amount }
   })
 }
+
+// Load the bets saved for this account.
+export function getMyBets(userId) {
+  return apiRequest(`/api/users/${encodeURIComponent(userId)}/bets`)
+}

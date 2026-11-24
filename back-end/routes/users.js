@@ -137,4 +137,49 @@ router.get('/:userId/groups', (req, res) => {
   res.json(userGroups)
 })
 
+// my bets -> GET /api/users/:userId/bets
+router.get('/:userId/bets', (req, res) => {
+  const user = db.users.find((account) => account.id === req.params.userId)
+
+  if (!user) {
+    return res.status(404).json({ error: 'This account does not exist.' })
+  }
+
+  const rows = []
+
+  // Look through all predictions so bets still show up after someone leaves a group.
+  for (const prediction of db.predictions) {
+    const bet = prediction.bets.find((item) => item.userId === user.id)
+
+    if (!bet) continue
+
+    const group = db.groups.find((item) => item.id === prediction.groupId)
+
+    // Keep the details My Bets needs to show the bet and its result.
+    rows.push({
+      groupId: prediction.groupId,
+      group: group ? { name: group.name } : null,
+      // The page uses this to decide whether to show "View prediction."
+      canOpen: Boolean(group?.memberIds.includes(user.id)),
+      prediction: {
+        id: prediction.id,
+        question: prediction.question,
+        result: prediction.result,
+        refunded: prediction.refunded
+      },
+      bet
+    })
+  }
+
+  // Show the newest bets first and put bets without a date at the bottom.
+  rows.sort((first, second) => {
+    const firstDate = new Date(first.bet.placedAt || 0).getTime()
+    const secondDate = new Date(second.bet.placedAt || 0).getTime()
+
+    return secondDate - firstDate
+  })
+
+  res.json(rows)
+})
+
 module.exports = router
