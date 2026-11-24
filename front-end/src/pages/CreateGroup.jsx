@@ -4,7 +4,7 @@ import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/auth'
 import { apiRequest, uploadImage, showFallbackPhoto } from '../services/api'
-import { getRandomMockGroupPhotoSeed } from '../services/mockGroups'
+import { getRandomGroupPhotoSeed } from '../services/groups'
 
 // form input stlying -> rounded boxes
 // red outline -> error
@@ -52,8 +52,8 @@ function CreateGroup() {
   const [memberLimit, setMemberLimit] = useState('')
   const [memberLimitTouched, setMemberLimitTouched] = useState(false)
 
-  // random mock group picture until changed
-  const [photoSeed] = useState(getRandomMockGroupPhotoSeed)
+  // random group picture until changed
+  const [photoSeed] = useState(getRandomGroupPhotoSeed)
 
   // uploaded group picture
   const [photoUrl, setPhotoUrl] = useState('')
