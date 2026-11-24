@@ -4,7 +4,7 @@ import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/auth'
 import { apiRequest } from '../services/api'
-import { isGroupFull } from '../services/mockGroups'
+import { isGroupFull } from '../services/groups'
 
 function InviteFriends() {
   const { groupId } = useParams()

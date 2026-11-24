@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import { useAuth } from '../context/auth'
 import { apiRequest, showFallbackPhoto } from '../services/api'
-import { isGroupFull } from '../services/mockGroups'
+import { isGroupFull } from '../services/groups'
 
 function JoinGroup() {
   const { inviteCode } = useParams()

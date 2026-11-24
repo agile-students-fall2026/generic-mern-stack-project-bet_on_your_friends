@@ -4,7 +4,7 @@ import AppLayout from '../components/AppLayout'
 import Toast from '../components/Toast'
 import { getDisplayName, useAuth } from '../context/auth'
 import { apiRequest, uploadImage, showFallbackPhoto } from '../services/api'
-import { isGroupFull } from '../services/mockGroups'
+import { isGroupFull } from '../services/groups'
 
 function GroupMembers() {
   const { groupId } = useParams()
