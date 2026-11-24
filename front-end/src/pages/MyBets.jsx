@@ -4,7 +4,7 @@ import AppLayout from '../components/AppLayout'
 import FilterButtons from '../components/FilterButtons'
 import BetResult from '../components/BetResult'
 import { useAuth } from '../context/auth'
-import { getMockMyBets } from '../services/mockPredictions'
+import { getMyBets } from '../services/predictions'
 
 // show the user's bets and their results across groups
 function MyBets() {
@@ -20,7 +20,7 @@ function MyBets() {
   useEffect(() => {
     let buffer = false
 
-    getMockMyBets(user)
+    getMyBets(user.id)
       .then((bets) => {
         if (!buffer) setRows(bets)
       })
@@ -83,9 +83,7 @@ function MyBets() {
           const group = row.group
           const prediction = row.prediction
           const bet = row.bet
-
-          // old bets stay visible after leaving, but the group can't be opened
-          const canOpen = group && group.memberIds.includes(user.id)
+          const canOpen = row.canOpen
 
           return (
             <li
@@ -112,7 +110,10 @@ function MyBets() {
                 <p>Final outcome: {prediction.result}</p>
               )}
 
-              <BetResult prediction={prediction} userId={user.id} />
+              <BetResult
+                prediction={{ ...prediction, bets: [bet] }}
+                userId={user.id}
+              />
 
               {/* Return to My Bets after viewing the prediction */}
               {canOpen ? (
