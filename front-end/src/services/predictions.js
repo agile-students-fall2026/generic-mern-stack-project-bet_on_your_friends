@@ -55,7 +55,7 @@ export function placeBet(data, id, outcome, amount) {
   })
 }
 
-// Send a comment to the backend for the selected prediction.
+// Send a cosmment to the backend for the selected prediction.
 export function addComment(data, predictionId, text) {
   return apiRequest(`/api/predictions/${predictionId}/comments`, {
     method: 'POST',
@@ -64,4 +64,8 @@ export function addComment(data, predictionId, text) {
       text
     }
   })
+}
+// Load the bets saved for this account.
+export function getMyBets(userId) {
+  return apiRequest(`/api/users/${encodeURIComponent(userId)}/bets`)
 }
