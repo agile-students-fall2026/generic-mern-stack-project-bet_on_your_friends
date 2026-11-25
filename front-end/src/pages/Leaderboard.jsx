@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import { getDisplayName, useAuth } from '../context/auth'
-import { apiRequest } from '../services/api'
+import { apiRequest, showFallbackPhoto } from '../services/api'
 
 function Leaderboard() {
   const { user } = useAuth()
@@ -107,6 +107,8 @@ function Leaderboard() {
             {/* put member's name + their coin balance as one slot in the leaderboard */}
             {/* ranked from highest coin to least amount */}
             {visibleMembers.map((member) => {
+              const fallbackPhoto = `https://picsum.photos/seed/${member.id}/80/80`
+
               // Equal balances share a rank based on the full member list.
               const rank =
                 data.members.findIndex(
@@ -121,10 +123,10 @@ function Leaderboard() {
                     {rank}
                   </span>
                   <img
-                  // user profile image shown on the leaderboard
-                    src={`https://picsum.photos/seed/${member.id}/80/80`}
+                    src={member.photoUrl || fallbackPhoto}
+                    onError={showFallbackPhoto(fallbackPhoto)}
                     alt=""
-                    className="h-9 w-9 rounded-full"
+                    className="h-9 w-9 rounded-full object-cover"
                   />
                   {/* leaderboard will always include where signed in user is
                    on the leaderboard with the ranking you're at within the group */}
