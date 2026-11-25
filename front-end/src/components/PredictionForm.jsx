@@ -2,7 +2,7 @@ import { useState } from 'react'
 import ConfirmModal from './ConfirmModal'
 import {
   getPredictionErrors, maxOutcomes, maxOutcomeLength, maxQuestionLength, maxStake
-} from '../services/mockPredictions'
+} from '../services/predictions'
 
 function inputStyle(hasError) {
   return `mt-2 w-full rounded-lg border p-3 ${hasError ? 'border-red-600' : 'border-gray-300'}`

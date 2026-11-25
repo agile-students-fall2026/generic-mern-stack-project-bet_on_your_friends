@@ -69,3 +69,57 @@ export function addComment(data, predictionId, text) {
 export function getMyBets(userId) {
   return apiRequest(`/api/users/${encodeURIComponent(userId)}/bets`)
 }
+
+export const maxOutcomes = 5
+export const maxOutcomeLength = 250
+export const maxQuestionLength = 250
+export const maxStake = 1000
+
+export function getPredictionErrors({ question, outcomes, deadline, stake }) {
+  const errors = {}
+  const cleanOutcomes = outcomes.map((outcome) => outcome.trim())
+  if (!question.trim()) errors.question = 'Enter a question.'
+  else if (question.length > maxQuestionLength) errors.question = 'Keep the question within 250 characters.'
+  if (!Number.isSafeInteger(Number(stake)) || Number(stake) < 1 || Number(stake) > maxStake) {
+    errors.stake = 'Enter a whole number of coins from 1 to 1,000.'
+  }
+  if (cleanOutcomes.length < 2 || cleanOutcomes.length > maxOutcomes || cleanOutcomes.some((outcome) => !outcome)) {
+    errors.outcomes = 'Enter between two and five outcomes.'
+  } else if (outcomes.some((outcome) => outcome.length > maxOutcomeLength)) {
+    errors.outcomes = 'Keep each outcome within 250 characters.'
+  } else if (new Set(cleanOutcomes.map((outcome) => outcome.toLowerCase())).size !== cleanOutcomes.length) {
+    errors.outcomes = 'Each outcome must be different.'
+  }
+  const latestDeadline = new Date()
+  latestDeadline.setFullYear(latestDeadline.getFullYear() + 1)
+  const chosenDeadline = new Date(deadline)
+  if (!deadline || Number.isNaN(chosenDeadline.getTime()) || chosenDeadline <= new Date() || chosenDeadline > latestDeadline) {
+    errors.deadline = 'Choose a future deadline within the next year.'
+  }
+  return errors
+}
+
+// Use the saved result and payout to build the badge text.
+export function getBetResult(prediction, userId) {
+  const bet = prediction.bets.find((item) => item.userId === userId)
+
+  if (!bet) {
+    return { label: 'No bet', net: null }
+  }
+
+  if (!prediction.result) {
+    return { label: 'Pending', net: null }
+  }
+
+  let label = 'Lost'
+
+  if (prediction.refunded) {
+    label = 'Refunded'
+  } else if (bet.outcome === prediction.result) {
+    label = 'Won'
+  }
+
+  // Subtract the original stake from the payout saved by the backend.
+  const net = Number.isFinite(bet.payout) ? bet.payout - bet.amount : null
+  return { label, net }
+}
