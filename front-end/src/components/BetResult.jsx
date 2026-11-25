@@ -1,4 +1,4 @@
-import { getBetResult } from '../services/mockPredictions'
+import { getBetResult } from '../services/predictions'
 
 // shared result badge for predictions and My Bets
 function BetResult({ prediction, userId }) {

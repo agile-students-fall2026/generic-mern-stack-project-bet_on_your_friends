@@ -2,12 +2,18 @@ import { fakerEN as faker } from '@faker-js/faker'
 import { getMockAccounts, getRegisteredMockAccount, saveMockAccount } from './mockSignUp.js'
 import { getMockGroupById,getMockGroupsForUser,updateMockPredictionCount } from './mockGroups.js'
 
+import { getPredictionErrors } from './predictions.js'
+
+export {
+  getPredictionErrors,
+  maxOutcomes,
+  maxOutcomeLength,
+  maxQuestionLength,
+  maxStake
+} from './predictions.js'
+
 const storageKey = 'betOnYourFriendsPredictions'
 const groupPredictions = JSON.parse(sessionStorage.getItem(storageKey) || '{}')
-export const maxOutcomes = 5
-export const maxOutcomeLength = 250
-export const maxQuestionLength = 250
-export const maxStake = 1000
 // Same limits in the comment form and when saving a comment.
 export const minCommentLength = 1
 export const maxCommentLength = 500
@@ -63,30 +69,6 @@ function findPrediction(data, id) {
   const prediction = data.predictions.find((item) => item.id === id)
   if (!prediction) throw new Error('Prediction not found.')
   return prediction
-}
-
-export function getPredictionErrors({ question, outcomes, deadline, stake }) {
-  const errors = {}
-  const cleanOutcomes = outcomes.map((outcome) => outcome.trim())
-  if (!question.trim()) errors.question = 'Enter a question.'
-  else if (question.length > maxQuestionLength) errors.question = 'Keep the question within 250 characters.'
-  if (!Number.isSafeInteger(Number(stake)) || Number(stake) < 1 || Number(stake) > maxStake) {
-    errors.stake = 'Enter a whole number of coins from 1 to 1,000.'
-  }
-  if (cleanOutcomes.length < 2 || cleanOutcomes.length > maxOutcomes || cleanOutcomes.some((outcome) => !outcome)) {
-    errors.outcomes = 'Enter between two and five outcomes.'
-  } else if (outcomes.some((outcome) => outcome.length > maxOutcomeLength)) {
-    errors.outcomes = 'Keep each outcome within 250 characters.'
-  } else if (new Set(cleanOutcomes.map((outcome) => outcome.toLowerCase())).size !== cleanOutcomes.length) {
-    errors.outcomes = 'Each outcome must be different.'
-  }
-  const latestDeadline = new Date()
-  latestDeadline.setFullYear(latestDeadline.getFullYear() + 1)
-  const chosenDeadline = new Date(deadline)
-  if (!deadline || Number.isNaN(chosenDeadline.getTime()) || chosenDeadline <= new Date() || chosenDeadline > latestDeadline) {
-    errors.deadline = 'Choose a future deadline within the next year.'
-  }
-  return errors
 }
 
 function checkForm(values) {
